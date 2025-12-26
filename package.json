@@ -1,0 +1,51 @@
+{
+  "name": "valtools",
+  "version": "1.0.0",
+  "description": "ValTools - Steam Account Manager with Modern UI",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "author": "ValTools",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "dependencies": {
+    "electron-updater": "^6.1.7"
+  },
+  "build": {
+    "appId": "com.valtools.app",
+    "productName": "ValTools",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ValTools"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "YOUR_GITHUB_USERNAME",
+      "repo": "YOUR_REPO_NAME"
+    },
+    "extraResources": [
+      {
+        "from": "backend",
+        "to": "backend"
+      }
+    ]
+  }
+}

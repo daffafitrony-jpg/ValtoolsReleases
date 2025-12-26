@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://*.firebaseio.com https://*.firebasedatabase.app https://api.jsonbin.io">
+    <title>ValTools Free Tools For Now</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- Custom Titlebar -->
+    <div class="titlebar">
+        <div class="titlebar-drag">
+            <div class="titlebar-icon">⚡</div>
+            <span class="titlebar-title">ValTools</span>
+            <span class="titlebar-version">Free Tools For Now</span>
+        </div>
+        <div class="titlebar-controls">
+            <button class="titlebar-btn" id="btn-minimize">─</button>
+            <button class="titlebar-btn" id="btn-maximize">□</button>
+            <button class="titlebar-btn close" id="btn-close">✕</button>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-container">
+                    <div class="logo-icon">⚡</div>
+                    <div class="logo-text">
+                        <span class="logo-title">ValTools</span>
+                        <span class="logo-subtitle">Free Tools For Now</span>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <button class="nav-btn active" data-view="dashboard">
+                    <span class="nav-icon">🏠</span>
+                    <span class="nav-text">Dashboard</span>
+                </button>
+                <button class="nav-btn" data-view="steamguard">
+                    <span class="nav-icon">🛡️</span>
+                    <span class="nav-text">Steam Guard</span>
+                </button>
+                <button class="nav-btn" id="btn-settings">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-text">Change Steam Path</span>
+                </button>
+                <button class="nav-btn" id="btn-refresh">
+                    <span class="nav-icon">🔄</span>
+                    <span class="nav-text">Refresh</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-divider"></div>
+
+            <button class="nav-btn admin-btn" id="btn-admin-login">
+                <span class="nav-icon">🔐</span>
+                <span class="nav-text">Admin Login</span>
+            </button>
+
+            <div class="sidebar-footer">
+                <div class="role-badge" id="role-badge">
+                    <span class="role-icon">👤</span>
+                    <span class="role-text">Guest Mode</span>
+                </div>
+                <div class="version-info" id="version-info">v1.0.0</div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard View -->
+            <section class="view active" id="view-dashboard">
+                <div class="dashboard-card game-view">
+                    <div class="card-header">
+                        <div class="card-icon">🎮</div>
+                        <h1 class="card-title">Select Game</h1>
+                        <p class="card-subtitle">Pilih game untuk melihat akun</p>
+                    </div>
+
+                    <!-- Search -->
+                    <div class="search-filter-container">
+                        <div class="search-box">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" class="search-input" id="search-input"
+                                placeholder="Cari game atau akun...">
+                        </div>
+                    </div>
+
+                    <!-- Game Cards Grid -->
+                    <div class="game-grid" id="game-grid">
+                        <div class="account-loading">
+                            <div class="spinner"></div>
+                            <span>Loading games...</span>
+                        </div>
+                    </div>
+
+                    <!-- Admin Actions at bottom -->
+                    <div class="card-actions" style="margin-top: 15px;">
+                        <div class="admin-actions" id="admin-actions"
+                            style="display: none; width: 100%; justify-content: center;">
+                            <button class="btn btn-secondary" id="btn-add-account" title="Add Account">➕ Tambah
+                                Akun</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Account Panel (shown after selecting a game) -->
+                <div class="dashboard-card account-panel" id="account-panel" style="display: none;">
+                    <div class="card-header">
+                        <button class="btn-back" id="btn-back-to-games">← Kembali</button>
+                        <h1 class="card-title" id="selected-game-title">Game Name</h1>
+                        <p class="card-subtitle" id="account-count">0 akun tersedia</p>
+                    </div>
+
+                    <div class="account-list-container">
+                        <div class="account-list" id="account-list"></div>
+                    </div>
+
+                    <div class="card-actions">
+                        <button class="btn btn-primary btn-inject" id="btn-inject">
+                            <span class="btn-icon">🚀</span>
+                            <span>LOCK & INJECT</span>
+                        </button>
+                        <div class="admin-actions-panel" id="admin-actions-panel" style="display: none;">
+                            <button class="btn btn-secondary" id="btn-add-in-category"
+                                title="Tambah di game ini">➕</button>
+                            <button class="btn btn-warning" id="btn-edit-account" title="Edit">✏️</button>
+                            <button class="btn btn-danger" id="btn-delete-account" title="Delete">🗑️</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Steam Guard View -->
+            <section class="view" id="view-steamguard">
+                <div class="steamguard-container">
+                    <!-- Login Panel -->
+                    <div class="sg-login-panel" id="sg-login-panel">
+                        <div class="sg-login-card">
+                            <div class="sg-logo">🛡️</div>
+                            <h2>Steam Guard Login</h2>
+
+                            <div class="sg-tabs">
+                                <button class="sg-tab active" data-tab="guest">GUEST</button>
+                                <button class="sg-tab" data-tab="admin">ADMIN</button>
+                            </div>
+
+                            <div class="sg-tab-content active" id="sg-tab-guest">
+                                <input type="text" class="sg-input" id="sg-voucher-code" placeholder="VOUCHER CODE">
+                                <button class="btn btn-primary" id="sg-guest-login">MASUK</button>
+                            </div>
+
+                            <div class="sg-tab-content" id="sg-tab-admin">
+                                <input type="password" class="sg-input" id="sg-admin-password"
+                                    placeholder="ADMIN PASSWORD">
+                                <button class="btn btn-danger" id="sg-admin-login">LOGIN</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dashboard Panel (after login) -->
+                    <div class="sg-dashboard" id="sg-dashboard" style="display: none;">
+                        <div class="sg-sidebar">
+                            <h3>MENU</h3>
+                            <button class="sg-nav-btn active" data-sg-view="accounts">🏠 Daftar Akun</button>
+                            <button class="sg-nav-btn sg-admin-only" data-sg-view="add-account">+ Tambah Akun</button>
+                            <button class="sg-nav-btn sg-admin-only" data-sg-view="voucher">🎟️ Buat Voucher</button>
+                            <button class="sg-nav-btn logout" id="sg-logout">Logout</button>
+                        </div>
+                        <div class="sg-main">
+                            <!-- Accounts List -->
+                            <div class="sg-view active" id="sg-view-accounts">
+                                <h2>DAFTAR AKUN STEAM</h2>
+                                <div class="sg-account-list" id="sg-account-list"></div>
+                            </div>
+
+                            <!-- Add Account Form -->
+                            <div class="sg-view" id="sg-view-add-account">
+                                <h2>TAMBAH AKUN BARU</h2>
+                                <div class="sg-form">
+                                    <label>Nama:</label>
+                                    <input type="text" class="sg-input" id="sg-acc-name">
+                                    <label>Email:</label>
+                                    <input type="email" class="sg-input" id="sg-acc-email">
+                                    <label>Password:</label>
+                                    <input type="password" class="sg-input" id="sg-acc-pass">
+                                    <div class="sg-form-actions">
+                                        <button class="btn btn-primary" id="sg-save-account">Simpan</button>
+                                        <button class="btn btn-secondary" id="sg-cancel-add">Batal</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Voucher Form -->
+                            <div class="sg-view" id="sg-view-voucher">
+                                <h2>VOUCHER TAMU</h2>
+                                <div class="sg-form">
+                                    <label>Durasi (Hari):</label>
+                                    <input type="number" class="sg-input" id="sg-voucher-days" value="7">
+                                    <button class="btn btn-primary" id="sg-generate-voucher">Generate</button>
+                                    <div class="sg-voucher-result" id="sg-voucher-result" style="display: none;">
+                                        <label>KODE:</label>
+                                        <input type="text" class="sg-input sg-voucher-code-result"
+                                            id="sg-voucher-code-result" readonly>
+                                        <span class="sg-voucher-expiry" id="sg-voucher-expiry"></span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Console -->
+                            <div class="sg-console" id="sg-console"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Status Bar -->
+        <footer class="status-bar">
+            <div class="status-left">
+                <span class="status-target" id="status-target">🎯 Target: steam.exe</span>
+            </div>
+            <div class="status-right">
+                <span class="status-connection" id="status-connection">⚪ Connecting...</span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Modal Overlay -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal" id="modal">
+            <div class="modal-icon" id="modal-icon">🔐</div>
+            <h2 class="modal-title" id="modal-title">Modal Title</h2>
+            <p class="modal-subtitle" id="modal-subtitle">Enter value</p>
+            <input type="text" class="modal-input" id="modal-input">
+            <div class="modal-actions">
+                <button class="btn btn-primary" id="modal-ok">✓ OK</button>
+                <button class="btn btn-secondary" id="modal-cancel">✕ Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+
+</html>

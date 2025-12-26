@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ValTools - Overlay</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: rgba(0, 0, 0, 0.95);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            user-select: none;
+        }
+
+        .overlay-container {
+            text-align: center;
+        }
+
+        .overlay-icon {
+            font-size: 80px;
+            margin-bottom: 30px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.1);
+                opacity: 0.8;
+            }
+        }
+
+        .overlay-text {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-shadow: 0 0 20px currentColor;
+            transition: color 0.3s ease;
+        }
+
+        .overlay-subtext {
+            font-size: 18px;
+            color: #ffd700;
+            opacity: 0.8;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #ffd700;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 30px auto;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="overlay-container">
+        <div class="overlay-icon">🔒</div>
+        <div class="overlay-text" id="overlay-text">SYSTEM LOCKED</div>
+        <div class="spinner" id="spinner"></div>
+        <div class="overlay-subtext" id="overlay-subtext">Memproses...</div>
+    </div>
+
+    <script>
+        if (window.electronAPI) {
+            window.electronAPI.onOverlayUpdate((data) => {
+                const textEl = document.getElementById('overlay-text');
+                const subtextEl = document.getElementById('overlay-subtext');
+                const spinner = document.getElementById('spinner');
+
+                if (data.text) {
+                    textEl.textContent = data.text;
+                }
+
+                if (data.subtext) {
+                    subtextEl.textContent = data.subtext;
+                }
+
+                if (data.color) {
+                    textEl.style.color = data.color;
+
+                    // Hide spinner on success/error
+                    if (data.color === 'lime' || data.color === 'red') {
+                        spinner.style.display = 'none';
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>
