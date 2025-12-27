@@ -90,12 +90,21 @@ const cipher = new FernetCompat(STATIC_KEY);
 // Initialization
 // ============================================
 document.addEventListener('DOMContentLoaded', async () => {
+    // Update splash status
+    updateSplashStatus('Memeriksa pembaruan...');
+
+    // Initialize auto-updater first (splash screen visible)
+    await initAutoUpdater();
+
+    // Update splash status
+    updateSplashStatus('Memuat data...');
+
+    // Initialize other components
     initTitlebar();
     initNavigation();
     initModal();
     initDashboard();
     initSteamGuard();
-    initAutoUpdater();
 
     // Fix: Always force focus on every click to prevent keyboard input loss
     // BUT NOT during injection (which needs Steam to stay focused)
@@ -123,62 +132,142 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateStatusBar();
     }
 
-    // Load cloud data
-    loadCloudData();
+    // Load cloud data then show app
+    updateSplashStatus('Memuat akun...');
+    await loadCloudData();
+
+    // Hide splash and show app
+    hideSplash();
 });
 
 // ============================================
-// Auto-Update System
+// Splash Screen Control
+// ============================================
+function updateSplashStatus(text) {
+    const statusEl = document.getElementById('splash-status');
+    if (statusEl) statusEl.textContent = text;
+}
+
+function hideSplash() {
+    const splash = document.getElementById('splash-screen');
+    const app = document.getElementById('app-container');
+
+    if (splash) splash.classList.add('hidden');
+    if (app) app.style.display = 'flex';
+}
+
+// ============================================
+// Auto-Update System - Forced Update Mode
 // ============================================
 let pendingUpdate = null;
+let updateDownloaded = false;
+let updateResolve = null; // For Promise resolution
 
-async function initAutoUpdater() {
-    if (!window.electronAPI) return;
+// Update splash progress bar
+function updateSplashProgress(percent) {
+    const progressBar = document.getElementById('splash-progress-bar');
+    const percentEl = document.getElementById('splash-percent');
 
-    // Display current version
-    try {
-        const version = await window.electronAPI.getAppVersion();
-        document.getElementById('version-info').textContent = `v${version}`;
-    } catch (e) {
-        document.getElementById('version-info').textContent = 'v1.0.0';
+    if (progressBar) {
+        progressBar.classList.add('downloading');
+        progressBar.style.width = `${percent}%`;
     }
+    if (percentEl) {
+        percentEl.textContent = `${Math.round(percent)}%`;
+    }
+}
 
-    // Listen for update available
-    window.electronAPI.onUpdateAvailable?.((info) => {
-        pendingUpdate = info;
-        const versionEl = document.getElementById('version-info');
-        versionEl.textContent = `🔄 Update v${info.version}`;
-        versionEl.classList.add('update-available');
-        versionEl.title = 'Klik untuk download update';
-
-        // Show notification
-        if (confirm(`Update baru tersedia: v${info.version}\n\nIngin download sekarang?`)) {
-            downloadUpdate();
+// Initialize auto-updater and wait for update check to complete
+// Returns Promise that resolves when:
+// - No update available (user can proceed)
+// - Update check error (user can proceed as fallback)
+// Note: If update available, download starts and app will auto-restart after download
+function initAutoUpdater() {
+    return new Promise((resolve) => {
+        if (!window.electronAPI) {
+            resolve(); // No Electron API, proceed immediately
+            return;
         }
-    });
 
-    // Listen for download progress
-    window.electronAPI.onDownloadProgress?.((progress) => {
+        updateResolve = resolve;
         const versionEl = document.getElementById('version-info');
-        versionEl.textContent = `⬇️ ${Math.round(progress.percent)}%`;
-    });
+        let currentVersion = 'v1.0.0';
 
-    // Listen for update downloaded
-    window.electronAPI.onUpdateDownloaded?.((info) => {
-        const versionEl = document.getElementById('version-info');
-        versionEl.textContent = `✅ Install v${info.version}`;
-        versionEl.title = 'Klik untuk install dan restart';
+        // Get current version
+        window.electronAPI.getAppVersion().then(version => {
+            currentVersion = version;
+            versionEl.textContent = `v${version}`;
+        }).catch(() => {
+            versionEl.textContent = 'v1.0.0';
+        });
 
-        if (confirm(`Update v${info.version} siap diinstall!\n\nRestart sekarang untuk menginstall?`)) {
-            installUpdate();
-        }
-    });
+        // Listen for update available - show downloading status
+        window.electronAPI.onUpdateAvailable?.((info) => {
+            pendingUpdate = info;
+            updateSplashStatus(`Mengunduh v${info.version}...`);
+            versionEl.textContent = `⬇️ Downloading...`;
+            versionEl.classList.add('version-downloading');
+            // Don't resolve - wait for download to complete
+        });
 
-    // Click on version to trigger update action
-    document.getElementById('version-info').addEventListener('click', () => {
-        if (pendingUpdate) {
-            downloadUpdate();
-        }
+        // Listen for download progress
+        window.electronAPI.onDownloadProgress?.((progress) => {
+            const percent = progress.percent || 0;
+            updateSplashProgress(percent);
+            updateSplashStatus(`Mengunduh pembaruan... ${Math.round(percent)}%`);
+        });
+
+        // Listen for download complete - app will auto-restart from main process
+        window.electronAPI.onUpdateDownloaded?.((info) => {
+            updateDownloaded = true;
+            updateSplashStatus('Menginstal pembaruan...');
+            updateSplashProgress(100);
+            document.getElementById('splash-percent').textContent = 'Memulai ulang...';
+            // Don't resolve - app will restart automatically from main process
+        });
+
+        // Listen for no update available - user can proceed
+        window.electronAPI.onUpdateNotAvailable?.(() => {
+            versionEl.classList.remove('version-checking');
+            versionEl.textContent = `v${currentVersion} ✓`;
+            versionEl.title = 'Versi terbaru';
+            if (updateResolve) {
+                updateResolve();
+                updateResolve = null;
+            }
+        });
+
+        // Listen for update error - user can proceed as fallback
+        window.electronAPI.onUpdateError?.((message) => {
+            console.error('Update error:', message);
+            versionEl.classList.remove('version-checking');
+            versionEl.textContent = `v${currentVersion}`;
+            if (updateResolve) {
+                updateResolve();
+                updateResolve = null;
+            }
+        });
+
+        // Fallback timeout - if no response in 15 seconds, proceed anyway
+        setTimeout(() => {
+            if (updateResolve && !pendingUpdate) {
+                console.log('Update check timeout, proceeding...');
+                versionEl.textContent = `v${currentVersion}`;
+                updateResolve();
+                updateResolve = null;
+            }
+        }, 15000);
+
+        // Init Donate Modal Logic
+        document.getElementById('btn-donate')?.addEventListener('click', () => {
+            const donateModal = document.getElementById('donate-modal');
+            if (donateModal) donateModal.style.display = 'flex';
+        });
+
+        document.getElementById('close-donate')?.addEventListener('click', () => {
+            const donateModal = document.getElementById('donate-modal');
+            if (donateModal) donateModal.style.display = 'none';
+        });
     });
 }
 

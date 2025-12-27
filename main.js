@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
@@ -8,46 +8,135 @@ let mainWindow;
 let overlayWindow;
 let pythonProcess = null;
 
-// Auto-updater configuration
-autoUpdater.autoDownload = false;
+// Auto-updater configuration - Silent auto-update
+autoUpdater.autoDownload = true;  // Download automatically
 autoUpdater.autoInstallOnAppQuit = true;
+autoUpdater.allowDowngrade = false;
+autoUpdater.allowPrerelease = false;
+
+// Force update checking for GitHub releases (public release repo)
+autoUpdater.setFeedURL({
+    provider: 'github',
+    owner: 'daffafitrony-jpg',
+    repo: 'ValtoolsReleases',
+    releaseType: 'release'
+});
 
 // Settings file path
 const settingsPath = path.join(app.getPath('userData'), 'settings.json');
 
-// Auto-updater events
+// Auto-updater events - Forced update mode
 function setupAutoUpdater() {
     autoUpdater.on('checking-for-update', () => {
         console.log('Checking for updates...');
+        if (mainWindow) {
+            mainWindow.webContents.send('checking-for-update');
+        }
     });
 
     autoUpdater.on('update-available', (info) => {
-        console.log('Update available:', info.version);
+        console.log('Update available:', info.version, '- downloading...');
         if (mainWindow) {
             mainWindow.webContents.send('update-available', info);
         }
     });
 
     autoUpdater.on('update-not-available', () => {
-        console.log('No updates available');
+        console.log('Already on latest version');
+        if (mainWindow) {
+            mainWindow.webContents.send('update-not-available');
+        }
     });
 
     autoUpdater.on('error', (err) => {
         console.error('Auto-update error:', err);
+        if (mainWindow) {
+            mainWindow.webContents.send('update-error', err.message);
+        }
     });
 
     autoUpdater.on('download-progress', (progress) => {
+        console.log('Download progress:', Math.round(progress.percent), '%');
         if (mainWindow) {
             mainWindow.webContents.send('download-progress', progress);
         }
     });
 
     autoUpdater.on('update-downloaded', (info) => {
-        console.log('Update downloaded');
+        console.log('Update downloaded, auto-installing...');
         if (mainWindow) {
             mainWindow.webContents.send('update-downloaded', info);
         }
+        // Auto-install after short delay to let UI update
+        setTimeout(() => {
+            autoUpdater.quitAndInstall(false, true);
+        }, 1500);
     });
+}
+
+// Manual version check using GitHub API
+function checkForUpdatesManually() {
+    const https = require('https');
+    const currentVersion = app.getVersion();
+
+    const options = {
+        hostname: 'api.github.com',
+        path: '/repos/daffafitrony-jpg/ValtoolsElectron/releases/latest',
+        method: 'GET',
+        headers: {
+            'User-Agent': 'ValTools-Electron'
+        }
+    };
+
+    const req = https.request(options, (res) => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+            try {
+                const release = JSON.parse(data);
+                const latestVersion = release.tag_name.replace('v', '');
+                console.log('Current version:', currentVersion, 'Latest version:', latestVersion);
+
+                if (compareVersions(latestVersion, currentVersion) > 0) {
+                    console.log('Manual check found update:', latestVersion);
+                    if (mainWindow) {
+                        mainWindow.webContents.send('update-available', {
+                            version: latestVersion,
+                            releaseNotes: release.body || '',
+                            downloadUrl: release.html_url
+                        });
+                    }
+                } else {
+                    console.log('Already on latest version');
+                    if (mainWindow) {
+                        mainWindow.webContents.send('update-not-available');
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to parse release info:', e);
+            }
+        });
+    });
+
+    req.on('error', (err) => {
+        console.error('Manual update check failed:', err);
+    });
+
+    req.end();
+}
+
+// Simple version comparison
+function compareVersions(v1, v2) {
+    const parts1 = v1.split('.').map(Number);
+    const parts2 = v2.split('.').map(Number);
+
+    for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+        const p1 = parts1[i] || 0;
+        const p2 = parts2[i] || 0;
+        if (p1 > p2) return 1;
+        if (p1 < p2) return -1;
+    }
+    return 0;
 }
 
 function loadSettings() {
@@ -136,6 +225,10 @@ ipcMain.handle('focus-window', () => {
     }
 });
 
+ipcMain.handle('open-external', async (event, url) => {
+    await shell.openExternal(url);
+});
+
 // Auto-update IPC handlers
 ipcMain.handle('get-app-version', () => app.getVersion());
 ipcMain.handle('check-for-updates', () => {
@@ -166,104 +259,147 @@ ipcMain.handle('select-steam-path', async () => {
     return null;
 });
 
-// Cloud sync via Python backend
-ipcMain.handle('load-cloud-data', async () => {
+// Cloud sync - Native JavaScript implementation (no Python required)
+const crypto = require('crypto');
+const https = require('https');
+
+// Cloud API configuration
+const CLOUD_API_KEY = '$2a$10$rogV/OBNjQ8GYVjQbuRiRu02pxTYppJ2QF4PxFEUJzGo8il9XRyYG';
+const CLOUD_BIN_ID = '69208b43d0ea881f40f70c06';
+const FERNET_KEY = 'LDfE_w9DvToSg8P1QOk50_h-DqrtDKjJBbm2zmOl42Y=';
+
+// Fernet-compatible encryption/decryption
+function fernetDecrypt(token) {
+    try {
+        const keyBuffer = Buffer.from(FERNET_KEY, 'base64');
+        const signingKey = keyBuffer.slice(0, 16);
+        const encryptionKey = keyBuffer.slice(16, 32);
+
+        const tokenBuffer = Buffer.from(token, 'base64');
+        const version = tokenBuffer[0];
+        const timestamp = tokenBuffer.slice(1, 9);
+        const iv = tokenBuffer.slice(9, 25);
+        const ciphertext = tokenBuffer.slice(25, -32);
+        const hmac = tokenBuffer.slice(-32);
+
+        const decipher = crypto.createDecipheriv('aes-128-cbc', encryptionKey, iv);
+        let decrypted = decipher.update(ciphertext);
+        decrypted = Buffer.concat([decrypted, decipher.final()]);
+
+        return decrypted.toString('utf8');
+    } catch (e) {
+        console.error('Decrypt error:', e.message);
+        return null;
+    }
+}
+
+function fernetEncrypt(text) {
+    try {
+        const keyBuffer = Buffer.from(FERNET_KEY, 'base64');
+        const signingKey = keyBuffer.slice(0, 16);
+        const encryptionKey = keyBuffer.slice(16, 32);
+
+        const iv = crypto.randomBytes(16);
+        const timestamp = Buffer.alloc(8);
+        timestamp.writeBigInt64BE(BigInt(Math.floor(Date.now() / 1000)));
+
+        const cipher = crypto.createCipheriv('aes-128-cbc', encryptionKey, iv);
+        let encrypted = cipher.update(text, 'utf8');
+        encrypted = Buffer.concat([encrypted, cipher.final()]);
+
+        const version = Buffer.from([0x80]);
+        const payload = Buffer.concat([version, timestamp, iv, encrypted]);
+
+        const hmacObj = crypto.createHmac('sha256', signingKey);
+        hmacObj.update(payload);
+        const hmacDigest = hmacObj.digest();
+
+        const token = Buffer.concat([payload, hmacDigest]);
+        return token.toString('base64');
+    } catch (e) {
+        console.error('Encrypt error:', e.message);
+        return null;
+    }
+}
+
+function httpRequest(options, postData = null) {
     return new Promise((resolve, reject) => {
-        const pythonScript = app.isPackaged
-            ? path.join(process.resourcesPath, 'backend', 'cloud_sync.py')
-            : path.join(__dirname, 'backend', 'cloud_sync.py');
-
-        if (!fs.existsSync(pythonScript)) {
-            reject(new Error('Cloud sync script not found'));
-            return;
-        }
-
-        const proc = spawn('python', [pythonScript, '--load']);
-        let output = '';
-        let errorOutput = '';
-
-        proc.stdout.on('data', (data) => {
-            output += data.toString();
+        const req = https.request(options, (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                try {
+                    resolve({ status: res.statusCode, data: JSON.parse(data) });
+                } catch (e) {
+                    resolve({ status: res.statusCode, data: data });
+                }
+            });
         });
-
-        proc.stderr.on('data', (data) => {
-            errorOutput += data.toString();
-        });
-
-        proc.on('close', (code) => {
-            try {
-                const result = JSON.parse(output.trim());
-                resolve(result);
-            } catch (e) {
-                reject(new Error(errorOutput || 'Failed to parse cloud data'));
-            }
-        });
-
-        proc.on('error', (err) => {
-            reject(err);
-        });
+        req.on('error', reject);
+        if (postData) req.write(postData);
+        req.end();
     });
+}
+
+ipcMain.handle('load-cloud-data', async () => {
+    try {
+        const response = await httpRequest({
+            hostname: 'api.jsonbin.io',
+            path: `/v3/b/${CLOUD_BIN_ID}/latest`,
+            method: 'GET',
+            headers: { 'X-Master-Key': CLOUD_API_KEY }
+        });
+
+        if (response.status === 200 && response.data.record && response.data.record.payload) {
+            const decrypted = fernetDecrypt(response.data.record.payload);
+            if (decrypted) {
+                const parsed = JSON.parse(decrypted);
+                return {
+                    success: true,
+                    accounts: parsed.accounts || {},
+                    admin_hash: parsed.admin_hash || ''
+                };
+            }
+        }
+        return { success: false, error: 'Failed to load data' };
+    } catch (e) {
+        console.error('Load cloud error:', e);
+        return { success: false, error: e.message };
+    }
 });
 
 ipcMain.handle('save-cloud-data', async (event, adminHash, accounts) => {
-    return new Promise((resolve, reject) => {
-        const pythonScript = app.isPackaged
-            ? path.join(process.resourcesPath, 'backend', 'cloud_sync.py')
-            : path.join(__dirname, 'backend', 'cloud_sync.py');
+    try {
+        const payload = fernetEncrypt(JSON.stringify({
+            admin_hash: adminHash,
+            accounts: accounts
+        }));
 
-        if (!fs.existsSync(pythonScript)) {
-            reject(new Error('Cloud sync script not found'));
-            return;
+        if (!payload) {
+            return { success: false, error: 'Encryption failed' };
         }
 
-        // Write accounts to temp file to avoid command line length limits
-        const tempDir = app.getPath('temp');
-        const tempFile = path.join(tempDir, 'valtools_accounts.json');
+        const postData = JSON.stringify({ payload: payload });
 
-        try {
-            fs.writeFileSync(tempFile, JSON.stringify({
-                admin_hash: adminHash,
-                accounts: accounts
-            }));
-        } catch (e) {
-            reject(new Error('Failed to write temp file: ' + e.message));
-            return;
-        }
-
-        const args = [
-            pythonScript,
-            '--save-file', tempFile
-        ];
-
-        const proc = spawn('python', args);
-        let output = '';
-        let errorOutput = '';
-
-        proc.stdout.on('data', (data) => {
-            output += data.toString();
-        });
-
-        proc.stderr.on('data', (data) => {
-            errorOutput += data.toString();
-        });
-
-        proc.on('close', (code) => {
-            // Clean up temp file
-            try { fs.unlinkSync(tempFile); } catch (e) { }
-
-            try {
-                const result = JSON.parse(output.trim());
-                resolve(result);
-            } catch (e) {
-                reject(new Error(errorOutput || 'Failed to save cloud data'));
+        const response = await httpRequest({
+            hostname: 'api.jsonbin.io',
+            path: `/v3/b/${CLOUD_BIN_ID}`,
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Master-Key': CLOUD_API_KEY,
+                'Content-Length': Buffer.byteLength(postData)
             }
-        });
+        }, postData);
 
-        proc.on('error', (err) => {
-            try { fs.unlinkSync(tempFile); } catch (e) { }
-            reject(err);
-        });
-    });
+        if (response.status === 200 || response.status === 201) {
+            return { success: true };
+        }
+        return { success: false, error: `HTTP ${response.status}` };
+    } catch (e) {
+        console.error('Save cloud error:', e);
+        return { success: false, error: e.message };
+    }
 });
 
 // Steam Guard Firebase sync via Python backend
@@ -289,39 +425,57 @@ ipcMain.handle('sg-create-voucher', async (event, masterKey, days) => {
 
 function runSteamGuardSync(args) {
     return new Promise((resolve, reject) => {
-        const pythonScript = app.isPackaged
-            ? path.join(process.resourcesPath, 'backend', 'steamguard_sync.py')
-            : path.join(__dirname, 'backend', 'steamguard_sync.py');
+        const executableName = process.platform === 'win32' ? 'steamguard_sync.exe' : 'steamguard_sync';
 
-        if (!fs.existsSync(pythonScript)) {
-            reject(new Error('Steam Guard sync script not found'));
+        let executablePath;
+        if (app.isPackaged) {
+            executablePath = path.join(process.resourcesPath, 'backend', executableName);
+        } else {
+            executablePath = path.join(__dirname, 'backend', 'dist', executableName);
+        }
+
+        if (!fs.existsSync(executablePath)) {
+            // Fallback for dev if exe not built
+            const pyScript = path.join(__dirname, 'backend', 'steamguard_sync.py');
+            if (fs.existsSync(pyScript)) {
+                console.log('Using fallback Python script for Steam Guard');
+                const proc = spawn('python', [pyScript, ...args]);
+                handleProcess(proc, resolve, reject);
+                return;
+            }
+            reject(new Error(`Steam Guard executable not found at: ${executablePath}`));
             return;
         }
 
-        const proc = spawn('python', [pythonScript, ...args]);
-        let output = '';
-        let errorOutput = '';
+        console.log('Spawning Steam Guard executable:', executablePath);
+        const proc = spawn(executablePath, args);
+        handleProcess(proc, resolve, reject);
+    });
+}
 
-        proc.stdout.on('data', (data) => {
-            output += data.toString();
-        });
+function handleProcess(proc, resolve, reject) {
+    let output = '';
+    let errorOutput = '';
 
-        proc.stderr.on('data', (data) => {
-            errorOutput += data.toString();
-        });
+    proc.stdout.on('data', (data) => {
+        output += data.toString();
+    });
 
-        proc.on('close', (code) => {
-            try {
-                const result = JSON.parse(output.trim());
-                resolve(result);
-            } catch (e) {
-                reject(new Error(errorOutput || 'Failed to parse Steam Guard response'));
-            }
-        });
+    proc.stderr.on('data', (data) => {
+        errorOutput += data.toString();
+    });
 
-        proc.on('error', (err) => {
-            reject(err);
-        });
+    proc.on('close', (code) => {
+        try {
+            const result = JSON.parse(output.trim());
+            resolve(result);
+        } catch (e) {
+            reject(new Error(errorOutput || 'Failed to parse Steam Guard response'));
+        }
+    });
+
+    proc.on('error', (err) => {
+        reject(err);
     });
 }
 
@@ -355,31 +509,46 @@ ipcMain.handle('destroy-overlay', () => {
 // Python backend communication
 ipcMain.handle('run-injection', async (event, accountData, steamPath) => {
     return new Promise((resolve, reject) => {
-        const pythonScript = app.isPackaged
-            ? path.join(process.resourcesPath, 'backend', 'automation.py')
-            : path.join(__dirname, 'backend', 'automation.py');
+        const executableName = process.platform === 'win32' ? 'automation.exe' : 'automation';
 
-        // Check if Python script exists
-        if (!fs.existsSync(pythonScript)) {
-            reject(new Error('Python automation script not found'));
-            return;
-        }
-
-        console.log('Starting injection with:', {
-            script: pythonScript,
-            username: accountData.u,
-            steamPath: steamPath
-        });
-
-        // Use shell: true on Windows to handle paths with spaces better
-        pythonProcess = spawn('python', [
-            pythonScript,
+        let executablePath;
+        let spawnArgs = [
             '--username', accountData.u,
             '--password', accountData.p,
             '--steam-path', steamPath
-        ], {
+        ];
+        let spawnCmd;
+
+        if (app.isPackaged) {
+            executablePath = path.join(process.resourcesPath, 'backend', executableName);
+        } else {
+            executablePath = path.join(__dirname, 'backend', 'dist', executableName);
+        }
+
+        if (fs.existsSync(executablePath)) {
+            spawnCmd = executablePath;
+            console.log('Starting injection with executable:', {
+                path: executablePath,
+                username: accountData.u
+            });
+        } else {
+            // Fallback to python script
+            const pythonScript = path.join(__dirname, 'backend', 'automation.py');
+            if (fs.existsSync(pythonScript)) {
+                console.log('Starting injection with Python script (fallback):', pythonScript);
+                spawnCmd = 'python';
+                spawnArgs = [pythonScript, ...spawnArgs];
+            } else {
+                reject(new Error('Automation executable/script not found'));
+                return;
+            }
+        }
+
+        // Use shell: false for executables
+        pythonProcess = spawn(spawnCmd, spawnArgs, {
             shell: false,
-            windowsHide: true
+            windowsHide: true,
+            detached: false // Keep attached so we can kill it
         });
 
         let output = '';
@@ -445,15 +614,16 @@ ipcMain.handle('abort-injection', () => {
 app.whenReady().then(() => {
     createMainWindow();
 
-    // Setup auto-updater and check for updates
+    // Setup auto-updater
     setupAutoUpdater();
 
-    // Check for updates after 3 seconds
+    // Check for updates silently after 2 seconds
     setTimeout(() => {
+        console.log('Checking for updates (silent mode)...');
         autoUpdater.checkForUpdates().catch(err => {
             console.error('Update check failed:', err);
         });
-    }, 3000);
+    }, 2000);
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {

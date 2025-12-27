@@ -27,7 +27,20 @@
         </div>
     </div>
 
-    <div class="app-container">
+    <!-- Splash Screen -->
+    <div class="splash-screen" id="splash-screen">
+        <div class="splash-content">
+            <div class="splash-logo">⚡</div>
+            <div class="splash-title">ValTools</div>
+            <div class="splash-status" id="splash-status">Memuat...</div>
+            <div class="splash-loader">
+                <div class="splash-loader-bar" id="splash-progress-bar"></div>
+            </div>
+            <div class="splash-percent" id="splash-percent"></div>
+        </div>
+    </div>
+
+    <div class="app-container" id="app-container" style="display: none;">
         <!-- Sidebar -->
         <aside class="sidebar">
             <div class="sidebar-header">
@@ -45,9 +58,14 @@
                     <span class="nav-icon">🏠</span>
                     <span class="nav-text">Dashboard</span>
                 </button>
-                <button class="nav-btn" data-view="steamguard">
+                <!-- Menu Steam Guard disembunyikan -->
+                <button class="nav-btn" data-view="steamguard" style="display: none;">
                     <span class="nav-icon">🛡️</span>
                     <span class="nav-text">Steam Guard</span>
+                </button>
+                <button class="nav-btn" id="btn-donate">
+                    <span class="nav-icon">💖</span>
+                    <span class="nav-text">Donate Me</span>
                 </button>
                 <button class="nav-btn" id="btn-settings">
                     <span class="nav-icon">⚙️</span>
@@ -59,9 +77,10 @@
                 </button>
             </nav>
 
-            <div class="sidebar-divider"></div>
+            <!-- Divider dan Admin Login disembunyikan -->
+            <div class="sidebar-divider" style="display: none;"></div>
 
-            <button class="nav-btn admin-btn" id="btn-admin-login">
+            <button class="nav-btn admin-btn" id="btn-admin-login" style="display: none;">
                 <span class="nav-icon">🔐</span>
                 <span class="nav-text">Admin Login</span>
             </button>
@@ -245,6 +264,40 @@
             <div class="modal-actions">
                 <button class="btn btn-primary" id="modal-ok">✓ OK</button>
                 <button class="btn btn-secondary" id="modal-cancel">✕ Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="update-modal" class="custom-modal update-modal-overlay" style="display: none;">
+        <div class="update-card">
+            <div class="update-icon-circle">
+                <span class="update-icon">📦</span>
+            </div>
+            <h2>Update Available!</h2>
+            <p>A new version <span id="update-version-text" style="color: #d1d5db;">1.0.0</span> is ready to be
+                installed.</p>
+            <p class="download-status" id="download-status-text">Download complete!</p>
+            <button id="btn-restart-install" class="btn-update-action">Restart & Install</button>
+        </div>
+    </div>
+
+    <!-- Donate Modal -->
+    <div id="donate-modal" class="custom-modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Support Development</h2>
+                <button class="modal-close" id="close-donate">✕</button>
+            </div>
+            <div class="modal-body" style="text-align: center;">
+                <div style="font-size: 48px; margin-bottom: 20px;">💖</div>
+                <p>If you like ValTools, consider supporting me!</p>
+                <div class="donate-buttons"
+                    style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+                    <a href="#" class="btn-accent"
+                        onclick="window.electronAPI.openExternal('https://saweria.co/valchi')">Saweria</a>
+                    <a href="#" class="btn-secondary"
+                        onclick="window.electronAPI.openExternal('https://ko-fi.com/valc2')">Ko-fi</a>
+                </div>
             </div>
         </div>
     </div>

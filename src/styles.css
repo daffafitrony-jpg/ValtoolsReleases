@@ -56,6 +56,107 @@ body {
 }
 
 /* ============================================
+   Splash Screen
+   ============================================ */
+.splash-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+.splash-screen.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.splash-content {
+    text-align: center;
+}
+
+.splash-logo {
+    font-size: 80px;
+    margin-bottom: 20px;
+    animation: splash-bounce 1s infinite;
+}
+
+.splash-title {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--accent-primary);
+    margin-bottom: 15px;
+    letter-spacing: 2px;
+}
+
+.splash-status {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 25px;
+}
+
+.splash-loader {
+    width: 200px;
+    height: 4px;
+    background: var(--bg-card);
+    border-radius: 2px;
+    margin: 0 auto;
+    overflow: hidden;
+}
+
+.splash-loader-bar {
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-primary), var(--accent-gold));
+    border-radius: 2px;
+    animation: splash-loading 1.5s infinite;
+    transition: width 0.3s ease;
+}
+
+.splash-loader-bar.downloading {
+    width: 0%;
+    animation: none;
+    background: linear-gradient(90deg, var(--accent-green), #059669);
+}
+
+.splash-percent {
+    font-size: 14px;
+    color: var(--accent-green);
+    font-weight: 600;
+    margin-top: 12px;
+    min-height: 20px;
+}
+
+@keyframes splash-bounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes splash-loading {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(350%);
+    }
+}
+
+/* ============================================
    Custom Titlebar
    ============================================ */
 .titlebar {
@@ -291,6 +392,25 @@ body {
     animation: pulse 2s infinite;
 }
 
+.version-info.version-checking {
+    color: var(--accent-primary);
+    opacity: 1;
+    animation: checking 1s infinite;
+}
+
+.version-info.version-downloading {
+    color: #4fc3f7;
+    opacity: 1;
+    animation: downloading 0.5s infinite alternate;
+}
+
+.version-info.update-ready {
+    color: var(--accent-green);
+    opacity: 1;
+    font-weight: 700;
+    animation: ready 1s infinite;
+}
+
 @keyframes pulse {
 
     0%,
@@ -300,6 +420,40 @@ body {
 
     50% {
         opacity: 0.5;
+    }
+}
+
+@keyframes checking {
+
+    0%,
+    100% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+@keyframes downloading {
+    from {
+        opacity: 0.7;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes ready {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
     }
 }
 
@@ -1184,4 +1338,184 @@ body {
 
 .sg-console-line.info {
     color: var(--accent-blue);
+}
+
+/* ============================================
+   Custom Modals & Pink Update Design
+   ============================================ */
+.custom-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    opacity: 0;
+    animation: fadeIn 0.3s forwards;
+}
+
+/* Update Modal - Pink Theme (User Request) */
+.update-card {
+    background: #fdf2f8;
+    /* Pink-50 */
+    border-radius: 16px;
+    padding: 32px;
+    width: 400px;
+    text-align: center;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    animation: bounceIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.update-icon-circle {
+    background: #fce7f3;
+    /* Pink-100 */
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.update-icon {
+    font-size: 32px;
+    color: #db2777;
+    /* Pink-600 */
+}
+
+.update-card h2 {
+    color: #831843;
+    /* Pink-900 */
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.update-card p {
+    color: #be185d;
+    /* Pink-700 */
+    margin-bottom: 24px;
+}
+
+.download-status {
+    color: #db2777 !important;
+    /* Pink-600 */
+    font-weight: 600;
+}
+
+.btn-update-action {
+    background: #f472b6;
+    /* Pink-400 */
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 16px;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.2s;
+}
+
+.btn-update-action:hover {
+    background: #ec4899;
+    /* Pink-500 */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+}
+
+/* Modal Content (Generic) */
+.modal-content {
+    background: #161b22;
+    padding: 30px;
+    border-radius: 12px;
+    border: 1px solid #30363d;
+    max-width: 400px;
+    width: 90%;
+    display: flex;
+    flex-direction: column;
+    animation: scaleIn 0.2s ease;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: #6b7b8c;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.modal-close:hover {
+    color: white;
+}
+
+.btn-accent {
+    background: #f7b500;
+    color: #0a0e14;
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.btn-secondary {
+    background: #2563eb;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    display: inline-block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes bounceIn {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+
+    60% {
+        transform: scale(1.05);
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
 }

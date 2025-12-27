@@ -58,5 +58,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
     onUpdateDownloaded: (callback) => {
         ipcRenderer.on('update-downloaded', (event, info) => callback(info));
-    }
+    },
+    onUpdateNotAvailable: (callback) => {
+        ipcRenderer.on('update-not-available', (event) => callback());
+    },
+    onCheckingForUpdate: (callback) => {
+        ipcRenderer.on('checking-for-update', (event) => callback());
+    },
+    onUpdateError: (callback) => {
+        ipcRenderer.on('update-error', (event, message) => callback(message));
+    },
+
+    // External links
+    openExternal: (url) => ipcRenderer.invoke('open-external', url)
 });

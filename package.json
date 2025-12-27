@@ -1,11 +1,13 @@
 {
   "name": "valtools",
-  "version": "1.0.0",
+  "version": "1.7.5",
   "description": "ValTools - Steam Account Manager with Modern UI",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder"
+    "build": "electron-builder",
+    "postinstall": "electron-builder install-app-deps",
+    "build-backend": "pyinstaller --noconsole --onefile --distpath backend/dist --workpath backend/build --specpath backend backend/automation.py && pyinstaller --noconsole --onefile --distpath backend/dist --workpath backend/build --specpath backend backend/steamguard_sync.py"
   },
   "author": "ValTools",
   "license": "MIT",
@@ -24,27 +26,28 @@
     },
     "win": {
       "target": "nsis",
-      "icon": "assets/icon.ico"
+      "icon": "assets/icon.png"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "installerIcon": "assets/icon.ico",
-      "uninstallerIcon": "assets/icon.ico",
-      "installerHeaderIcon": "assets/icon.ico",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "ValTools"
     },
     "publish": {
       "provider": "github",
-      "owner": "YOUR_GITHUB_USERNAME",
-      "repo": "YOUR_REPO_NAME"
+      "owner": "daffafitrony-jpg",
+      "repo": "ValtoolsReleases",
+      "releaseType": "release"
     },
     "extraResources": [
       {
-        "from": "backend",
-        "to": "backend"
+        "from": "backend/dist",
+        "to": "backend",
+        "filter": [
+          "*.exe"
+        ]
       }
     ]
   }
