@@ -166,24 +166,46 @@ let pendingUpdate = null;
 let updateDownloaded = false;
 let updateResolve = null; // For Promise resolution
 let internetCheckInterval = null;
+let consecutiveFailures = 0; // Track consecutive failures
 
-// Check if internet is available
+// Check if internet is available using multiple endpoints
 async function checkInternetConnection() {
-    try {
-        // Try to fetch a small file from a reliable server
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
+    // Multiple endpoints to try (in order)
+    const endpoints = [
+        'https://www.cloudflare.com/favicon.ico',
+        'https://api.jsonbin.io',
+        'https://www.google.com/favicon.ico'
+    ];
 
-        await fetch('https://www.google.com/favicon.ico', {
-            mode: 'no-cors',
-            cache: 'no-store',
-            signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        return true;
-    } catch (e) {
+    for (const url of endpoints) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+
+            await fetch(url, {
+                mode: 'no-cors',
+                cache: 'no-store',
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            consecutiveFailures = 0; // Reset on success
+            return true;
+        } catch (e) {
+            // Try next endpoint
+            continue;
+        }
+    }
+
+    // All endpoints failed
+    consecutiveFailures++;
+
+    // Only return false after 2 consecutive failures to avoid false positives
+    if (consecutiveFailures >= 2) {
         return false;
     }
+
+    // First failure, give benefit of the doubt
+    return true;
 }
 
 // Show no internet error on splash screen
@@ -265,22 +287,23 @@ async function hideInternetWarning() {
     await loadCloudData();
 }
 
-// Start monitoring internet connection (less aggressive)
+// Start monitoring internet connection (much less aggressive)
 function startInternetMonitor() {
-    // Check every 30 seconds (less aggressive)
+    // Check every 60 seconds (very conservative)
     internetCheckInterval = setInterval(async () => {
         try {
             const online = await checkInternetConnection();
-            if (!online) {
+            // Only show warning if consecutiveFailures already >= 2 (from checkInternetConnection)
+            if (!online && consecutiveFailures >= 2) {
                 showInternetWarning();
-            } else {
+            } else if (online) {
                 hideInternetWarning();
             }
         } catch (e) {
             // Ignore errors, don't show warning for transient issues
             console.log('Internet check error:', e);
         }
-    }, 30000);
+    }, 60000);
 
     // Listen for browser online/offline events (debounced)
     window.addEventListener('offline', () => {
@@ -310,11 +333,20 @@ function updateSplashProgress(percent) {
     }
 }
 
-// Start the update check process
-async function startUpdateCheck() {
+// Start the update check process with retry logic
+async function startUpdateCheck(retryCount = 0) {
+    const MAX_RETRIES = 3;
+
     // First check internet
     const online = await checkInternetConnection();
     if (!online) {
+        if (retryCount < MAX_RETRIES) {
+            // Retry after 2 seconds
+            updateSplashStatus(`Memeriksa koneksi... (${retryCount + 1}/${MAX_RETRIES})`);
+            setTimeout(() => startUpdateCheck(retryCount + 1), 2000);
+            return;
+        }
+        // Max retries reached, show no internet
         showNoInternetSplash();
         return;
     }
