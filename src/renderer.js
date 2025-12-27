@@ -138,6 +138,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Hide splash and show app
     hideSplash();
+
+    // Start monitoring internet connection
+    startInternetMonitor();
 });
 
 // ============================================
@@ -157,11 +160,95 @@ function hideSplash() {
 }
 
 // ============================================
-// Auto-Update System - Forced Update Mode
+// Auto-Update System - Forced Update Mode with Internet Requirement
 // ============================================
 let pendingUpdate = null;
 let updateDownloaded = false;
 let updateResolve = null; // For Promise resolution
+let internetCheckInterval = null;
+
+// Check if internet is available
+async function checkInternetConnection() {
+    try {
+        // Try to fetch a small file from a reliable server
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        await fetch('https://www.google.com/favicon.ico', {
+            mode: 'no-cors',
+            cache: 'no-store',
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+// Show no internet error on splash screen
+function showNoInternetSplash() {
+    updateSplashStatus('⚠️ Tidak ada koneksi internet');
+    const percentEl = document.getElementById('splash-percent');
+    if (percentEl) {
+        percentEl.innerHTML = '<button class="btn-retry" id="btn-retry-connection">🔄 Coba Lagi</button>';
+    }
+
+    // Hide the loading animation
+    const progressBar = document.getElementById('splash-progress-bar');
+    if (progressBar) {
+        progressBar.style.display = 'none';
+    }
+
+    // Add retry button listener
+    document.getElementById('btn-retry-connection')?.addEventListener('click', () => {
+        // Reset UI
+        if (progressBar) progressBar.style.display = 'block';
+        if (percentEl) percentEl.textContent = '';
+        updateSplashStatus('Memeriksa koneksi...');
+
+        // Retry connection and update check
+        startUpdateCheck();
+    });
+}
+
+// Show internet disconnected warning modal
+function showInternetWarning() {
+    const modal = document.getElementById('internet-warning-modal');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+// Hide internet warning modal
+function hideInternetWarning() {
+    const modal = document.getElementById('internet-warning-modal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// Start monitoring internet connection
+function startInternetMonitor() {
+    // Check every 10 seconds
+    internetCheckInterval = setInterval(async () => {
+        const online = await checkInternetConnection();
+        if (!online) {
+            showInternetWarning();
+        } else {
+            hideInternetWarning();
+        }
+    }, 10000);
+
+    // Also listen for browser online/offline events
+    window.addEventListener('offline', () => {
+        showInternetWarning();
+    });
+
+    window.addEventListener('online', () => {
+        hideInternetWarning();
+    });
+}
 
 // Update splash progress bar
 function updateSplashProgress(percent) {
@@ -177,11 +264,44 @@ function updateSplashProgress(percent) {
     }
 }
 
+// Start the update check process
+async function startUpdateCheck() {
+    // First check internet
+    const online = await checkInternetConnection();
+    if (!online) {
+        showNoInternetSplash();
+        return;
+    }
+
+    updateSplashStatus('Memeriksa pembaruan...');
+
+    // Trigger update check via Electron
+    window.electronAPI?.checkForUpdates();
+
+    // Set a timeout for no response (but require internet)
+    setTimeout(async () => {
+        if (updateResolve && !pendingUpdate) {
+            // Check internet again before allowing to proceed
+            const stillOnline = await checkInternetConnection();
+            if (stillOnline) {
+                console.log('Update check timeout but online, proceeding...');
+                const versionEl = document.getElementById('version-info');
+                window.electronAPI?.getAppVersion().then(v => {
+                    versionEl.textContent = `v${v} ✓`;
+                });
+                updateResolve();
+                updateResolve = null;
+            } else {
+                showNoInternetSplash();
+            }
+        }
+    }, 15000);
+}
+
 // Initialize auto-updater and wait for update check to complete
 // Returns Promise that resolves when:
-// - No update available (user can proceed)
-// - Update check error (user can proceed as fallback)
-// Note: If update available, download starts and app will auto-restart after download
+// - No update available AND internet is connected (user can proceed)
+// Note: If no internet, user must retry. If update available, app will auto-restart after download
 function initAutoUpdater() {
     return new Promise((resolve) => {
         if (!window.electronAPI) {
@@ -237,26 +357,26 @@ function initAutoUpdater() {
             }
         });
 
-        // Listen for update error - user can proceed as fallback
-        window.electronAPI.onUpdateError?.((message) => {
+        // Listen for update error - check internet instead of proceeding
+        window.electronAPI.onUpdateError?.(async (message) => {
             console.error('Update error:', message);
-            versionEl.classList.remove('version-checking');
-            versionEl.textContent = `v${currentVersion}`;
-            if (updateResolve) {
-                updateResolve();
-                updateResolve = null;
+            const online = await checkInternetConnection();
+            if (online) {
+                // Error but online, can proceed
+                versionEl.classList.remove('version-checking');
+                versionEl.textContent = `v${currentVersion}`;
+                if (updateResolve) {
+                    updateResolve();
+                    updateResolve = null;
+                }
+            } else {
+                // No internet, show retry
+                showNoInternetSplash();
             }
         });
 
-        // Fallback timeout - if no response in 15 seconds, proceed anyway
-        setTimeout(() => {
-            if (updateResolve && !pendingUpdate) {
-                console.log('Update check timeout, proceeding...');
-                versionEl.textContent = `v${currentVersion}`;
-                updateResolve();
-                updateResolve = null;
-            }
-        }, 15000);
+        // Start the update check
+        startUpdateCheck();
 
         // Init Donate Modal Logic
         document.getElementById('btn-donate')?.addEventListener('click', () => {
