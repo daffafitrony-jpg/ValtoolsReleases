@@ -1,6 +1,6 @@
 {
   "name": "valtools",
-  "version": "1.7.9",
+  "version": "1.8.1",
   "description": "ValTools - Steam Account Manager with Modern UI",
   "main": "main.js",
   "scripts": {

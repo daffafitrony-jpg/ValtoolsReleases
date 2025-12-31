@@ -722,6 +722,20 @@ async function activateInject() {
             return { success: false, error: 'Folder PluginSteam tidak ditemukan di assets' };
         }
 
+        // Check if Steam is running
+        try {
+            const { execSync } = require('child_process');
+            const result = execSync('tasklist /FI "IMAGENAME eq steam.exe" /NH', { encoding: 'utf8' });
+            if (result.toLowerCase().includes('steam.exe')) {
+                return {
+                    success: false,
+                    error: 'Steam sedang berjalan! Tutup Steam terlebih dahulu, lalu coba lagi.'
+                };
+            }
+        } catch (e) {
+            // tasklist failed, continue anyway
+        }
+
         // Copy DLLs to Steam root folder
         const entries = fs.readdirSync(pluginSteamPath);
         for (const file of entries) {
@@ -732,15 +746,35 @@ async function activateInject() {
             if (fs.existsSync(destPath)) {
                 const backupPath = destPath + '.backup';
                 if (!fs.existsSync(backupPath)) {
-                    fs.copyFileSync(destPath, backupPath);
+                    try {
+                        fs.copyFileSync(destPath, backupPath);
+                    } catch (backupErr) {
+                        // Ignore backup errors
+                    }
                 }
             }
 
-            fs.copyFileSync(srcPath, destPath);
+            try {
+                fs.copyFileSync(srcPath, destPath);
+            } catch (copyErr) {
+                if (copyErr.code === 'EBUSY' || copyErr.code === 'EPERM') {
+                    return {
+                        success: false,
+                        error: `File ${file} sedang digunakan. Tutup Steam dan semua aplikasi Steam lainnya, lalu coba lagi.`
+                    };
+                }
+                throw copyErr;
+            }
         }
 
-        return { success: true, message: 'Inject berhasil diaktifkan!' };
+        return { success: true, message: 'Inject berhasil diaktifkan! Buka Steam untuk menggunakannya.' };
     } catch (error) {
+        if (error.code === 'EBUSY' || error.code === 'EPERM') {
+            return {
+                success: false,
+                error: 'File sedang digunakan. Tutup Steam terlebih dahulu, lalu coba lagi.'
+            };
+        }
         return { success: false, error: error.message };
     }
 }
