@@ -5,424 +5,631 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://*.firebaseio.com https://*.firebasedatabase.app https://api.jsonbin.io">
+        content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://*.firebaseio.com https://*.firebasedatabase.app https://api.jsonbin.io">
     <title>ValTools Free Tools For Now</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'val-bg': '#0f0f0f',
+                        'val-bg-2': '#171717',
+                        'val-card': '#1f1f1f',
+                        'val-card-hover': '#2a2a2a',
+                        'val-accent': '#a855f7',
+                        'val-accent-2': '#7c3aed',
+                        'val-gold': '#fbbf24',
+                        'val-border': '#2d2d2d',
+                        'val-border-light': '#3d3d3d',
+                        'val-text': '#ffffff',
+                        'val-text-2': '#a1a1aa',
+                        'val-text-muted': '#71717a',
+                        'val-success': '#22c55e',
+                        'val-danger': '#ef4444',
+                        'val-warning': '#f59e0b',
+                    },
+                    fontFamily: {
+                        'inter': ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 20px rgba(168, 85, 247, 0.3)',
+                        'glow-lg': '0 0 40px rgba(168, 85, 247, 0.4)',
+                        'card': '0 4px 20px rgba(0, 0, 0, 0.4)',
+                    }
+                }
+            }
+        }
+    </script>
     <link rel="stylesheet" href="styles.css">
 </head>
 
-<body>
+<body class="font-inter bg-val-bg text-val-text overflow-hidden h-screen">
     <!-- Custom Titlebar -->
-    <div class="titlebar">
-        <div class="titlebar-drag">
-            <div class="titlebar-icon">⚡</div>
-            <span class="titlebar-title">ValTools</span>
-            <span class="titlebar-version">Free Tools For Now</span>
+    <div
+        class="titlebar flex justify-between items-center h-10 bg-gradient-to-r from-val-bg-2 to-val-bg border-b border-val-border select-none">
+        <div class="titlebar-drag flex items-center gap-3 pl-4">
+            <div
+                class="w-6 h-6 rounded-lg bg-gradient-to-br from-val-accent to-val-accent-2 flex items-center justify-center text-xs font-bold">
+                V</div>
+            <span class="font-semibold text-sm text-val-text">ValTools</span>
+            <span class="text-[10px] text-val-text-muted bg-val-card/50 px-2 py-0.5 rounded-md">v1.8.1</span>
         </div>
-        <div class="titlebar-controls">
-            <button class="titlebar-btn" id="btn-minimize">─</button>
-            <button class="titlebar-btn" id="btn-maximize">□</button>
-            <button class="titlebar-btn close" id="btn-close">✕</button>
+        <div class="titlebar-controls flex">
+            <button
+                class="titlebar-btn w-12 h-10 border-none bg-transparent text-val-text-2 text-xs cursor-pointer transition-all hover:bg-white/10 hover:text-val-text"
+                id="btn-minimize">─</button>
+            <button
+                class="titlebar-btn w-12 h-10 border-none bg-transparent text-val-text-2 text-xs cursor-pointer transition-all hover:bg-white/10 hover:text-val-text"
+                id="btn-maximize">□</button>
+            <button
+                class="titlebar-btn close w-12 h-10 border-none bg-transparent text-val-text-2 text-xs cursor-pointer transition-all hover:bg-red-500 hover:text-white"
+                id="btn-close">✕</button>
         </div>
     </div>
 
     <!-- Splash Screen -->
-    <div class="splash-screen" id="splash-screen">
-        <div class="splash-content">
-            <div class="splash-logo">⚡</div>
-            <div class="splash-title">ValTools</div>
-            <div class="splash-status" id="splash-status">Memuat...</div>
-            <div class="splash-loader">
-                <div class="splash-loader-bar" id="splash-progress-bar"></div>
+    <div class="splash-screen fixed inset-0 bg-val-bg flex items-center justify-center z-[9999] transition-all duration-500"
+        id="splash-screen">
+        <div class="text-center">
+            <div
+                class="w-20 h-20 rounded-2xl bg-gradient-to-br from-val-accent to-val-accent-2 flex items-center justify-center text-3xl font-bold mx-auto mb-6 animate-pulse shadow-glow-lg">
+                V</div>
+            <div class="text-2xl font-bold text-val-text mb-2">ValTools</div>
+            <div class="text-sm text-val-text-muted mb-8" id="splash-status">Memuat...</div>
+            <div class="w-48 h-1.5 bg-val-card rounded-full mx-auto overflow-hidden">
+                <div class="splash-loader-bar w-2/5 h-full bg-gradient-to-r from-val-accent to-val-accent-2 rounded-full"
+                    id="splash-progress-bar"></div>
             </div>
-            <div class="splash-percent" id="splash-percent"></div>
+            <div class="text-xs text-val-success font-medium mt-3 min-h-[16px]" id="splash-percent"></div>
         </div>
     </div>
 
-    <div class="app-container" id="app-container" style="display: none;">
+    <div class="app-container flex h-[calc(100vh-40px-32px)]" id="app-container" style="display: none;">
         <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <div class="logo-container">
-                    <div class="logo-icon">⚡</div>
-                    <div class="logo-text">
-                        <span class="logo-title">ValTools</span>
-                        <span class="logo-subtitle">Free Tools For Now</span>
+        <aside class="sidebar w-[220px] bg-val-bg-2 border-r border-val-border flex flex-col">
+            <!-- Logo -->
+            <div class="p-4 border-b border-val-border">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-9 h-9 rounded-xl bg-gradient-to-br from-val-accent to-val-accent-2 flex items-center justify-center text-sm font-bold shadow-glow">
+                        V</div>
+                    <div class="flex flex-col">
+                        <span class="text-sm font-bold">ValTools</span>
+                        <span class="text-[10px] text-val-text-muted">Free Tools</span>
                     </div>
                 </div>
             </div>
 
-            <nav class="sidebar-nav">
-                <button class="nav-btn active" data-view="dashboard">
-                    <span class="nav-icon">🏠</span>
-                    <span class="nav-text">Dashboard</span>
+            <!-- Navigation -->
+            <nav class="flex-1 p-3 space-y-1">
+                <div class="text-[10px] font-semibold text-val-text-muted uppercase tracking-wider px-3 mb-2">Menu</div>
+
+                <button
+                    class="nav-btn active w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left"
+                    data-view="dashboard">
+                    <span class="text-base">🎮</span>
+                    <span>Account Sharing</span>
                 </button>
-                <button class="nav-btn" data-view="gameinjection">
-                    <span class="nav-icon">🎮</span>
-                    <span class="nav-text">Game Injection</span>
+                <button
+                    class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left text-val-text-2 hover:bg-val-card hover:text-val-text"
+                    data-view="gameinjection">
+                    <span class="text-base">💉</span>
+                    <span>Game Injection</span>
                 </button>
-                <!-- Menu Steam Guard disembunyikan -->
-                <button class="nav-btn" data-view="steamguard" style="display: none;">
-                    <span class="nav-icon">🛡️</span>
-                    <span class="nav-text">Steam Guard</span>
+                <button
+                    class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left text-val-text-2 hover:bg-val-card hover:text-val-text"
+                    data-view="steamguard" style="display: none;">
+                    <span class="text-base">🛡️</span>
+                    <span>Steam Guard</span>
                 </button>
-                <button class="nav-btn" id="btn-donate">
-                    <span class="nav-icon">💖</span>
-                    <span class="nav-text">Donate Me</span>
+
+                <div class="text-[10px] font-semibold text-val-text-muted uppercase tracking-wider px-3 mb-2 mt-6">
+                    Settings</div>
+
+                <button
+                    class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left text-val-text-2 hover:bg-val-card hover:text-val-text"
+                    id="btn-settings">
+                    <span class="text-base">⚙️</span>
+                    <span>Steam Path</span>
                 </button>
-                <button class="nav-btn" id="btn-settings">
-                    <span class="nav-icon">⚙️</span>
-                    <span class="nav-text">Change Steam Path</span>
+                <button
+                    class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left text-val-text-2 hover:bg-val-card hover:text-val-text"
+                    id="btn-refresh">
+                    <span class="text-base">🔄</span>
+                    <span>Refresh</span>
                 </button>
-                <button class="nav-btn" id="btn-refresh">
-                    <span class="nav-icon">🔄</span>
-                    <span class="nav-text">Refresh</span>
+                <button
+                    class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left text-val-text-2 hover:bg-val-card hover:text-val-text"
+                    id="btn-donate">
+                    <span class="text-base">💜</span>
+                    <span>Support</span>
                 </button>
             </nav>
 
-            <!-- Divider dan Admin Login disembunyikan -->
-            <div class="sidebar-divider" style="display: none;"></div>
+            <div class="hidden" style="display: none;">
+                <div class="h-px bg-val-border"></div>
+                <button
+                    class="nav-btn admin-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all text-left text-val-text-2 hover:bg-val-card hover:text-val-text"
+                    id="btn-admin-login">
+                    <span class="text-base">🔐</span>
+                    <span>Admin</span>
+                </button>
+            </div>
 
-            <button class="nav-btn admin-btn" id="btn-admin-login" style="display: none;">
-                <span class="nav-icon">🔐</span>
-                <span class="nav-text">Admin Login</span>
-            </button>
-
-            <div class="sidebar-footer">
-                <div class="role-badge" id="role-badge">
-                    <span class="role-icon">👤</span>
-                    <span class="role-text">Guest Mode</span>
+            <!-- Footer -->
+            <div class="p-3 border-t border-val-border">
+                <div class="role-badge flex items-center gap-2 p-2.5 bg-val-card/50 rounded-lg" id="role-badge">
+                    <div class="w-7 h-7 rounded-full bg-val-card flex items-center justify-center text-sm">👤</div>
+                    <div class="flex flex-col">
+                        <span class="text-xs font-medium">Guest</span>
+                        <span class="text-[10px] text-val-text-muted">Free Access</span>
+                    </div>
                 </div>
-                <div class="version-info" id="version-info">v1.0.0</div>
+                <div class="version-info text-[10px] text-val-text-muted text-center mt-2 cursor-pointer hover:text-val-text transition-colors"
+                    id="version-info">v1.0.0</div>
             </div>
         </aside>
 
         <!-- Main Content -->
-        <main class="main-content">
-            <!-- Dashboard View -->
-            <section class="view active" id="view-dashboard">
-                <div class="dashboard-card game-view">
-                    <div class="card-header">
-                        <div class="card-icon">🎮</div>
-                        <h1 class="card-title">Select Game</h1>
-                        <p class="card-subtitle">Pilih game untuk melihat akun</p>
+        <main class="flex-1 overflow-hidden bg-val-bg">
+            <!-- Dashboard View (Account Sharing) -->
+            <section class="view active h-full" id="view-dashboard">
+                <!-- Game View -->
+                <div class="game-view h-full flex flex-col p-6">
+                    <!-- Header -->
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h1 class="text-xl font-bold">Account Sharing</h1>
+                            <p class="text-sm text-val-text-muted mt-1">Pilih game untuk melihat akun tersedia</p>
+                        </div>
+                        <div class="admin-actions hidden" id="admin-actions">
+                            <button
+                                class="px-4 py-2 bg-val-accent hover:bg-val-accent-2 text-white rounded-lg text-sm font-medium transition-all"
+                                id="btn-add-account">+ Add Account</button>
+                        </div>
                     </div>
 
                     <!-- Search -->
-                    <div class="search-filter-container">
-                        <div class="search-box">
-                            <span class="search-icon">🔍</span>
-                            <input type="text" class="search-input" id="search-input"
-                                placeholder="Cari game atau akun...">
+                    <div class="mb-6">
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-val-text-muted">🔍</span>
+                            <input type="text" id="search-input" placeholder="Search games..."
+                                class="w-full pl-11 pr-4 py-3 bg-val-card border border-val-border rounded-xl text-sm focus:outline-none focus:border-val-accent focus:ring-1 focus:ring-val-accent/50 transition-all placeholder:text-val-text-muted">
                         </div>
                     </div>
 
-                    <!-- Game Cards Grid -->
-                    <div class="game-grid" id="game-grid">
-                        <div class="account-loading">
-                            <div class="spinner"></div>
-                            <span>Loading games...</span>
-                        </div>
-                    </div>
-
-                    <!-- Admin Actions at bottom -->
-                    <div class="card-actions" style="margin-top: 15px;">
-                        <div class="admin-actions" id="admin-actions"
-                            style="display: none; width: 100%; justify-content: center;">
-                            <button class="btn btn-secondary" id="btn-add-account" title="Add Account">➕ Tambah
-                                Akun</button>
+                    <!-- Game Grid -->
+                    <div class="flex-1 overflow-y-auto custom-scrollbar">
+                        <div class="game-grid grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"
+                            id="game-grid">
+                            <div
+                                class="col-span-full flex flex-col items-center justify-center py-20 text-val-text-muted">
+                                <div
+                                    class="w-10 h-10 border-2 border-val-border border-t-val-accent rounded-full animate-spin mb-4">
+                                </div>
+                                <span class="text-sm">Loading games...</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Account Panel (shown after selecting a game) -->
-                <div class="dashboard-card account-panel" id="account-panel" style="display: none;">
-                    <div class="card-header">
-                        <button class="btn-back" id="btn-back-to-games">← Kembali</button>
-                        <h1 class="card-title" id="selected-game-title">Game Name</h1>
-                        <p class="card-subtitle" id="account-count">0 akun tersedia</p>
+                <div class="account-panel h-full flex-col p-6 bg-val-bg" id="account-panel" style="display: none;">
+                    <!-- Header -->
+                    <div class="flex items-center gap-4 mb-6">
+                        <button
+                            class="btn-back w-10 h-10 rounded-xl bg-val-card hover:bg-val-card-hover border border-val-border flex items-center justify-center transition-all"
+                            id="btn-back-to-games">
+                            ←
+                        </button>
+                        <div class="flex-1">
+                            <h1 class="text-xl font-bold" id="selected-game-title">Game Name</h1>
+                            <p class="text-sm text-val-text-muted" id="account-count">0 accounts available</p>
+                        </div>
+                        <div class="admin-actions-panel hidden gap-2" id="admin-actions-panel">
+                            <button
+                                class="w-10 h-10 rounded-xl bg-val-card hover:bg-val-card-hover border border-val-border flex items-center justify-center transition-all"
+                                id="btn-add-in-category" title="Add">➕</button>
+                            <button
+                                class="w-10 h-10 rounded-xl bg-val-warning/20 hover:bg-val-warning/30 text-val-warning flex items-center justify-center transition-all"
+                                id="btn-edit-account" title="Edit">✏️</button>
+                            <button
+                                class="w-10 h-10 rounded-xl bg-val-danger/20 hover:bg-val-danger/30 text-val-danger flex items-center justify-center transition-all"
+                                id="btn-delete-account" title="Delete">🗑️</button>
+                        </div>
                     </div>
 
-                    <div class="account-list-container">
-                        <div class="account-list" id="account-list"></div>
+                    <!-- Account List -->
+                    <div
+                        class="flex-1 overflow-y-auto custom-scrollbar bg-val-card/30 rounded-xl border border-val-border p-3">
+                        <div class="account-list space-y-2" id="account-list"></div>
                     </div>
 
-                    <div class="card-actions">
-                        <button class="btn btn-primary btn-inject" id="btn-inject">
-                            <span class="btn-icon">🚀</span>
+                    <!-- Inject Button -->
+                    <div class="mt-4">
+                        <button
+                            class="btn-inject w-full py-4 bg-gradient-to-r from-val-success to-emerald-600 hover:from-val-success hover:to-emerald-500 text-white rounded-xl text-sm font-bold transition-all shadow-lg hover:shadow-emerald-500/25 flex items-center justify-center gap-2"
+                            id="btn-inject">
+                            <span>🚀</span>
                             <span>LOCK & INJECT</span>
                         </button>
-                        <div class="admin-actions-panel" id="admin-actions-panel" style="display: none;">
-                            <button class="btn btn-secondary" id="btn-add-in-category"
-                                title="Tambah di game ini">➕</button>
-                            <button class="btn btn-warning" id="btn-edit-account" title="Edit">✏️</button>
-                            <button class="btn btn-danger" id="btn-delete-account" title="Delete">🗑️</button>
-                        </div>
                     </div>
                 </div>
             </section>
 
             <!-- Steam Guard View -->
-            <section class="view" id="view-steamguard">
-                <div class="steamguard-container">
+            <section class="view h-full hidden" id="view-steamguard">
+                <div class="steamguard-container w-full h-full flex items-center justify-center p-6">
                     <!-- Login Panel -->
-                    <div class="sg-login-panel" id="sg-login-panel">
-                        <div class="sg-login-card">
-                            <div class="sg-logo">🛡️</div>
-                            <h2>Steam Guard Login</h2>
-
-                            <div class="sg-tabs">
-                                <button class="sg-tab active" data-tab="guest">GUEST</button>
-                                <button class="sg-tab" data-tab="admin">ADMIN</button>
+                    <div class="sg-login-panel w-full max-w-sm" id="sg-login-panel">
+                        <div class="bg-val-card rounded-2xl border border-val-border p-8 shadow-card">
+                            <div class="text-center mb-6">
+                                <div
+                                    class="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-2xl mx-auto mb-4 shadow-lg">
+                                    🛡️</div>
+                                <h2 class="text-xl font-bold">Steam Guard</h2>
+                                <p class="text-sm text-val-text-muted mt-1">Login to access</p>
                             </div>
 
-                            <div class="sg-tab-content active" id="sg-tab-guest">
-                                <input type="text" class="sg-input" id="sg-voucher-code" placeholder="VOUCHER CODE">
-                                <button class="btn btn-primary" id="sg-guest-login">MASUK</button>
+                            <div class="sg-tabs flex bg-val-bg rounded-lg p-1 mb-6">
+                                <button class="sg-tab flex-1 py-2 rounded-md text-xs font-semibold transition-all"
+                                    data-tab="guest">GUEST</button>
+                                <button
+                                    class="sg-tab flex-1 py-2 rounded-md text-xs font-semibold transition-all text-val-text-muted"
+                                    data-tab="admin">ADMIN</button>
                             </div>
 
-                            <div class="sg-tab-content" id="sg-tab-admin">
-                                <input type="password" class="sg-input" id="sg-admin-password"
-                                    placeholder="ADMIN PASSWORD">
-                                <button class="btn btn-danger" id="sg-admin-login">LOGIN</button>
+                            <div class="sg-tab-content active space-y-4" id="sg-tab-guest">
+                                <input type="text"
+                                    class="sg-input w-full py-3 px-4 bg-val-bg border border-val-border rounded-xl text-sm text-center focus:outline-none focus:border-blue-500 transition-all"
+                                    id="sg-voucher-code" placeholder="Enter voucher code">
+                                <button
+                                    class="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white rounded-xl font-semibold transition-all"
+                                    id="sg-guest-login">LOGIN</button>
+                            </div>
+
+                            <div class="sg-tab-content hidden space-y-4" id="sg-tab-admin">
+                                <input type="password"
+                                    class="sg-input w-full py-3 px-4 bg-val-bg border border-val-border rounded-xl text-sm text-center focus:outline-none focus:border-val-danger transition-all"
+                                    id="sg-admin-password" placeholder="Admin password">
+                                <button
+                                    class="w-full py-3 bg-gradient-to-r from-val-danger to-red-600 hover:from-red-500 hover:to-red-600 text-white rounded-xl font-semibold transition-all"
+                                    id="sg-admin-login">ADMIN LOGIN</button>
                             </div>
                         </div>
                     </div>
 
                     <!-- Dashboard Panel (after login) -->
-                    <div class="sg-dashboard" id="sg-dashboard" style="display: none;">
-                        <div class="sg-sidebar">
-                            <h3>MENU</h3>
-                            <button class="sg-nav-btn active" data-sg-view="accounts">🏠 Daftar Akun</button>
-                            <button class="sg-nav-btn sg-admin-only" data-sg-view="add-account">+ Tambah Akun</button>
-                            <button class="sg-nav-btn sg-admin-only" data-sg-view="voucher">🎟️ Buat Voucher</button>
-                            <button class="sg-nav-btn logout" id="sg-logout">Logout</button>
-                        </div>
-                        <div class="sg-main">
-                            <!-- Accounts List -->
-                            <div class="sg-view active" id="sg-view-accounts">
-                                <h2>DAFTAR AKUN STEAM</h2>
-                                <div class="sg-account-list" id="sg-account-list"></div>
+                    <div class="sg-dashboard hidden w-full h-full bg-val-card rounded-2xl border border-val-border overflow-hidden"
+                        id="sg-dashboard">
+                        <div class="flex h-full">
+                            <div class="sg-sidebar w-48 bg-val-bg-2 p-4 flex flex-col gap-1 border-r border-val-border">
+                                <h3 class="text-xs font-semibold text-val-text-muted uppercase mb-3 px-2">Navigation
+                                </h3>
+                                <button
+                                    class="sg-nav-btn active w-full px-3 py-2 rounded-lg text-sm text-left transition-all"
+                                    data-sg-view="accounts">🏠 Accounts</button>
+                                <button
+                                    class="sg-nav-btn sg-admin-only hidden w-full px-3 py-2 rounded-lg text-sm text-left text-val-text-2 hover:bg-val-card transition-all"
+                                    data-sg-view="add-account">+ Add</button>
+                                <button
+                                    class="sg-nav-btn sg-admin-only hidden w-full px-3 py-2 rounded-lg text-sm text-left text-val-text-2 hover:bg-val-card transition-all"
+                                    data-sg-view="voucher">🎟️ Voucher</button>
+                                <button
+                                    class="sg-nav-btn logout w-full px-3 py-2 rounded-lg text-sm text-left text-val-danger hover:bg-val-danger/10 transition-all mt-auto"
+                                    id="sg-logout">Logout</button>
                             </div>
-
-                            <!-- Add Account Form -->
-                            <div class="sg-view" id="sg-view-add-account">
-                                <h2>TAMBAH AKUN BARU</h2>
-                                <div class="sg-form">
-                                    <label>Nama:</label>
-                                    <input type="text" class="sg-input" id="sg-acc-name">
-                                    <label>Email:</label>
-                                    <input type="email" class="sg-input" id="sg-acc-email">
-                                    <label>Password:</label>
-                                    <input type="password" class="sg-input" id="sg-acc-pass">
-                                    <div class="sg-form-actions">
-                                        <button class="btn btn-primary" id="sg-save-account">Simpan</button>
-                                        <button class="btn btn-secondary" id="sg-cancel-add">Batal</button>
+                            <div class="sg-main flex-1 p-6 flex flex-col overflow-hidden">
+                                <div class="sg-view active flex flex-col flex-1" id="sg-view-accounts">
+                                    <h2 class="text-lg font-bold mb-4">Steam Accounts</h2>
+                                    <div class="sg-account-list flex-1 overflow-y-auto space-y-2 custom-scrollbar"
+                                        id="sg-account-list"></div>
+                                </div>
+                                <div class="sg-view hidden flex-col" id="sg-view-add-account">
+                                    <h2 class="text-lg font-bold mb-4">Add Account</h2>
+                                    <div class="sg-form space-y-4 max-w-sm">
+                                        <div>
+                                            <label class="block text-xs text-val-text-muted mb-1">Name</label>
+                                            <input type="text"
+                                                class="sg-input w-full py-2.5 px-3 bg-val-bg border border-val-border rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                                                id="sg-acc-name">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-val-text-muted mb-1">Email</label>
+                                            <input type="email"
+                                                class="sg-input w-full py-2.5 px-3 bg-val-bg border border-val-border rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                                                id="sg-acc-email">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs text-val-text-muted mb-1">Password</label>
+                                            <input type="password"
+                                                class="sg-input w-full py-2.5 px-3 bg-val-bg border border-val-border rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                                                id="sg-acc-pass">
+                                        </div>
+                                        <div class="flex gap-2 pt-2">
+                                            <button
+                                                class="flex-1 py-2.5 bg-val-success text-white rounded-lg text-sm font-medium"
+                                                id="sg-save-account">Save</button>
+                                            <button
+                                                class="flex-1 py-2.5 bg-val-card text-val-text rounded-lg text-sm font-medium"
+                                                id="sg-cancel-add">Cancel</button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-
-                            <!-- Voucher Form -->
-                            <div class="sg-view" id="sg-view-voucher">
-                                <h2>VOUCHER TAMU</h2>
-                                <div class="sg-form">
-                                    <label>Durasi (Hari):</label>
-                                    <input type="number" class="sg-input" id="sg-voucher-days" value="7">
-                                    <button class="btn btn-primary" id="sg-generate-voucher">Generate</button>
-                                    <div class="sg-voucher-result" id="sg-voucher-result" style="display: none;">
-                                        <label>KODE:</label>
-                                        <input type="text" class="sg-input sg-voucher-code-result"
-                                            id="sg-voucher-code-result" readonly>
-                                        <span class="sg-voucher-expiry" id="sg-voucher-expiry"></span>
+                                <div class="sg-view hidden flex-col" id="sg-view-voucher">
+                                    <h2 class="text-lg font-bold mb-4">Create Voucher</h2>
+                                    <div class="sg-form space-y-4 max-w-sm">
+                                        <div>
+                                            <label class="block text-xs text-val-text-muted mb-1">Duration
+                                                (Days)</label>
+                                            <input type="number"
+                                                class="sg-input w-full py-2.5 px-3 bg-val-bg border border-val-border rounded-lg text-sm focus:outline-none focus:border-blue-500"
+                                                id="sg-voucher-days" value="7">
+                                        </div>
+                                        <button
+                                            class="w-full py-2.5 bg-val-accent text-white rounded-lg text-sm font-medium"
+                                            id="sg-generate-voucher">Generate</button>
+                                        <div class="sg-voucher-result hidden mt-4 p-4 bg-val-bg rounded-xl text-center"
+                                            id="sg-voucher-result">
+                                            <label class="block text-xs text-val-text-muted mb-2">VOUCHER CODE</label>
+                                            <input type="text"
+                                                class="sg-voucher-code-result w-full py-3 bg-transparent text-xl font-bold text-center tracking-widest"
+                                                id="sg-voucher-code-result" readonly>
+                                            <span class="block mt-2 text-xs text-val-gold"
+                                                id="sg-voucher-expiry"></span>
+                                        </div>
                                     </div>
                                 </div>
+                                <div class="sg-console mt-auto h-28 bg-val-bg rounded-lg p-3 overflow-y-auto font-mono text-xs text-val-text-2 custom-scrollbar"
+                                    id="sg-console"></div>
                             </div>
-
-                            <!-- Console -->
-                            <div class="sg-console" id="sg-console"></div>
                         </div>
                     </div>
                 </div>
             </section>
 
             <!-- Game Injection View -->
-            <section class="view" id="view-gameinjection">
-                <div class="gi-container">
-                    <!-- Action Bar -->
-                    <div class="gi-actions-bar">
-                        <button class="gi-action-btn gi-activate-btn" id="gi-activate-inject-btn">
-                            <span class="gi-action-icon">🔓</span>
-                            <span>Activate Inject</span>
+            <section class="view h-full hidden" id="view-gameinjection">
+                <div class="h-full flex flex-col p-6 overflow-y-auto custom-scrollbar">
+                    <!-- Header -->
+                    <div class="mb-6">
+                        <h1 class="text-xl font-bold">Game Injection</h1>
+                        <p class="text-sm text-val-text-muted mt-1">Inject games to your Steam library</p>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="flex flex-wrap gap-3 mb-6">
+                        <button
+                            class="gi-btn-action flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-val-accent to-val-accent-2 text-white rounded-xl text-sm font-semibold transition-all hover:shadow-glow hover:-translate-y-0.5"
+                            id="gi-activate-inject-btn">
+                            <span>🔓</span> Activate Inject
                         </button>
-                        <button class="gi-action-btn gi-restart-btn" id="gi-restart-steam-btn">
-                            <span class="gi-action-icon">🔄</span>
-                            <span>Restart Steam</span>
+                        <button
+                            class="gi-btn-action flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-val-warning to-amber-500 text-white rounded-xl text-sm font-semibold transition-all hover:shadow-lg hover:-translate-y-0.5"
+                            id="gi-restart-steam-btn">
+                            <span>🔄</span> Restart Steam
                         </button>
-                        <button class="gi-action-btn gi-settings-btn" id="gi-settings-btn">
-                            <span class="gi-action-icon">⚙️</span>
-                            <span>Steam Path</span>
+                        <button
+                            class="gi-btn-action flex items-center gap-2 px-5 py-3 bg-val-card text-val-text-2 border border-val-border rounded-xl text-sm font-medium transition-all hover:bg-val-card-hover hover:text-val-text"
+                            id="gi-settings-btn">
+                            <span>⚙️</span> Steam Path
                         </button>
                     </div>
 
                     <!-- Main Card -->
-                    <div class="gi-card">
-                        <div class="gi-card-header">
-                            <span class="gi-card-icon">🎮</span>
-                            <h2>Game Injection</h2>
+                    <div class="bg-val-card rounded-2xl border border-val-border p-6 mb-6 shadow-card">
+                        <!-- Info -->
+                        <div
+                            class="flex items-center gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl mb-6">
+                            <span class="text-xl">💡</span>
+                            <p class="text-sm text-val-text-2">Enter <span class="text-val-text font-medium">Game
+                                    ID</span> or paste Steam store URL to inject</p>
                         </div>
 
-                        <div class="gi-info-box">
-                            <span class="gi-info-icon">ℹ️</span>
-                            <span>Masukkan <strong>Game ID</strong> atau paste Steam URL untuk inject</span>
-                        </div>
-
-                        <div class="gi-input-group">
-                            <label>GAME ID / URL</label>
+                        <!-- Input -->
+                        <div class="mb-6">
+                            <label
+                                class="block text-xs font-semibold text-val-text-muted uppercase tracking-wider mb-2">Game
+                                ID / URL</label>
                             <input type="text" id="gi-game-id"
-                                placeholder="1245670 atau https://store.steampowered.com/app/..." autocomplete="off">
+                                placeholder="e.g. 1245670 or https://store.steampowered.com/app/..."
+                                class="w-full py-4 px-4 bg-val-bg border border-val-border rounded-xl text-sm focus:outline-none focus:border-val-accent focus:ring-1 focus:ring-val-accent/30 transition-all placeholder:text-val-text-muted"
+                                autocomplete="off">
                         </div>
 
-                        <div class="gi-game-info" id="gi-game-info" style="display: none;">
-                            <div class="gi-game-name" id="gi-game-name">Loading...</div>
-                            <div class="gi-dlc-count" id="gi-dlc-count">0 DLC detected</div>
+                        <!-- Game Info (hidden by default) -->
+                        <div class="gi-game-info hidden p-4 bg-val-success/10 border border-val-success/20 rounded-xl mb-6"
+                            id="gi-game-info">
+                            <div class="text-base font-bold text-val-text" id="gi-game-name">Loading...</div>
+                            <div class="text-xs text-val-success mt-1" id="gi-dlc-count">0 DLC detected</div>
                         </div>
 
-                        <div class="gi-button-group">
-                            <button class="gi-btn gi-btn-add" id="gi-add-btn">
-                                <span>+</span> ADD GAME
+                        <!-- Action Buttons -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <button
+                                class="py-4 bg-gradient-to-r from-val-success to-emerald-600 hover:from-val-success hover:to-emerald-500 text-white rounded-xl font-bold transition-all shadow-lg hover:shadow-emerald-500/25 flex items-center justify-center gap-2"
+                                id="gi-add-btn">
+                                <span class="text-lg">+</span> ADD GAME
                             </button>
-                            <button class="gi-btn gi-btn-delete" id="gi-delete-btn">
+                            <button
+                                class="py-4 bg-gradient-to-r from-val-danger to-red-600 hover:from-red-500 hover:to-red-600 text-white rounded-xl font-bold transition-all shadow-lg hover:shadow-red-500/25 flex items-center justify-center gap-2"
+                                id="gi-delete-btn">
                                 <span>🗑️</span> DELETE
                             </button>
                         </div>
 
-                        <div class="gi-status-message" id="gi-status-message"></div>
+                        <!-- Status Message -->
+                        <div class="gi-status-message hidden mt-4 p-4 rounded-xl text-sm" id="gi-status-message"></div>
                     </div>
 
-                    <!-- How to Use Card -->
-                    <div class="gi-card gi-how-to">
-                        <h2>Cara Pakai</h2>
-                        <div class="gi-step">
-                            <span class="gi-step-number">1</span>
-                            <span>Klik "Activate Inject" untuk mengaktifkan SteamTools</span>
-                        </div>
-                        <div class="gi-step">
-                            <span class="gi-step-number">2</span>
-                            <span>Masukkan Game ID atau paste URL Steam</span>
-                        </div>
-                        <div class="gi-step">
-                            <span class="gi-step-number">3</span>
-                            <span>Klik "Add Game" untuk inject game</span>
-                        </div>
-                        <div class="gi-step">
-                            <span class="gi-step-number">4</span>
-                            <span>Klik "Restart Steam" untuk apply perubahan</span>
+                    <!-- How to Use -->
+                    <div class="bg-val-card/50 rounded-2xl border border-val-border p-6">
+                        <h3 class="text-sm font-semibold text-val-text-2 mb-4">How to Use</h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-7 h-7 rounded-full bg-val-accent/20 text-val-accent flex items-center justify-center text-xs font-bold">
+                                    1</div>
+                                <span class="text-sm text-val-text-2">Click "Activate Inject" to enable
+                                    SteamTools</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-7 h-7 rounded-full bg-val-accent/20 text-val-accent flex items-center justify-center text-xs font-bold">
+                                    2</div>
+                                <span class="text-sm text-val-text-2">Enter Game ID or paste Steam URL</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-7 h-7 rounded-full bg-val-accent/20 text-val-accent flex items-center justify-center text-xs font-bold">
+                                    3</div>
+                                <span class="text-sm text-val-text-2">Click "Add Game" to inject</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-7 h-7 rounded-full bg-val-accent/20 text-val-accent flex items-center justify-center text-xs font-bold">
+                                    4</div>
+                                <span class="text-sm text-val-text-2">Click "Restart Steam" to apply changes</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </section>
         </main>
-
-        <!-- Status Bar -->
-        <footer class="status-bar">
-            <div class="status-left">
-                <span class="status-target" id="status-target">🎯 Target: steam.exe</span>
-            </div>
-            <div class="status-right">
-                <span class="status-connection" id="status-connection">⚪ Connecting...</span>
-            </div>
-        </footer>
     </div>
 
+    <!-- Status Bar -->
+    <footer
+        class="status-bar fixed bottom-0 left-0 right-0 h-8 bg-val-bg-2 border-t border-val-border flex justify-between items-center px-4 text-[11px] font-mono text-val-text-muted z-[100]">
+        <a href="#" onclick="window.electronAPI.openExternal('https://discord.gg/GbRCaNYBUR'); return false;"
+            class="flex items-center gap-1.5 text-val-text-muted hover:text-[#5865F2] transition-colors cursor-pointer"
+            id="status-target">
+            <span>💬</span>
+            <span>Join our Discord</span>
+        </a>
+        <span class="status-connection" id="status-connection">⚪ Connecting...</span>
+    </footer>
+
     <!-- Modal Overlay -->
-    <div class="modal-overlay" id="modal-overlay">
-        <div class="modal" id="modal">
-            <div class="modal-icon" id="modal-icon">🔐</div>
-            <h2 class="modal-title" id="modal-title">Modal Title</h2>
-            <p class="modal-subtitle" id="modal-subtitle">Enter value</p>
-            <input type="text" class="modal-input" id="modal-input">
-            <div class="modal-actions">
-                <button class="btn btn-primary" id="modal-ok">✓ OK</button>
-                <button class="btn btn-secondary" id="modal-cancel">✕ Cancel</button>
+    <div class="modal-overlay fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[1000]"
+        id="modal-overlay">
+        <div class="modal bg-val-card rounded-2xl border border-val-border p-6 w-[380px] max-w-[90%] shadow-2xl"
+            id="modal">
+            <div class="text-center mb-4">
+                <div class="text-4xl mb-3" id="modal-icon">🔐</div>
+                <h2 class="text-lg font-bold" id="modal-title">Modal Title</h2>
+                <p class="text-xs text-val-text-muted mt-1" id="modal-subtitle">Enter value</p>
+            </div>
+            <input type="text"
+                class="modal-input w-full py-3 px-4 bg-val-bg border border-val-border rounded-xl text-sm mb-4 focus:outline-none focus:border-val-accent transition-all"
+                id="modal-input">
+            <div class="flex gap-3">
+                <button class="flex-1 py-3 bg-val-success text-white rounded-xl font-semibold transition-all"
+                    id="modal-ok">✓ OK</button>
+                <button
+                    class="flex-1 py-3 bg-val-card border border-val-border text-val-text rounded-xl font-semibold transition-all"
+                    id="modal-cancel">✕ Cancel</button>
             </div>
         </div>
     </div>
 
-    <div id="update-modal" class="custom-modal update-modal-overlay" style="display: none;">
-        <div class="update-card">
-            <div class="update-icon-circle">
-                <span class="update-icon">📦</span>
-            </div>
-            <h2>Update Available!</h2>
-            <p>A new version <span id="update-version-text" style="color: #d1d5db;">1.0.0</span> is ready to be
-                installed.</p>
-            <p class="download-status" id="download-status-text">Download complete!</p>
-            <button id="btn-restart-install" class="btn-update-action">Restart & Install</button>
+    <!-- Update Modal -->
+    <div id="update-modal"
+        class="custom-modal fixed inset-0 bg-black/80 backdrop-blur-sm hidden justify-center items-center z-[9999]"
+        style="display: none;">
+        <div
+            class="bg-gradient-to-br from-val-accent/20 to-val-accent-2/20 rounded-2xl p-8 w-[380px] border border-val-accent/30 text-center shadow-glow-lg">
+            <div
+                class="w-16 h-16 rounded-2xl bg-gradient-to-br from-val-accent to-val-accent-2 flex items-center justify-center text-2xl mx-auto mb-4 shadow-glow">
+                📦</div>
+            <h2 class="text-xl font-bold mb-2">Update Available!</h2>
+            <p class="text-val-text-2 mb-1">Version <span id="update-version-text"
+                    class="text-val-text font-semibold">1.0.0</span> is ready</p>
+            <p class="text-val-success font-medium mb-6" id="download-status-text">Download complete!</p>
+            <button id="btn-restart-install"
+                class="w-full py-3 bg-gradient-to-r from-val-accent to-val-accent-2 text-white rounded-xl font-semibold transition-all hover:shadow-glow">Restart
+                & Install</button>
         </div>
     </div>
 
     <!-- Donate Modal -->
-    <div id="donate-modal" class="custom-modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Support Development</h2>
-                <button class="modal-close" id="close-donate">✕</button>
+    <div id="donate-modal"
+        class="custom-modal fixed inset-0 bg-black/80 backdrop-blur-sm hidden justify-center items-center z-[9999]"
+        style="display: none;">
+        <div class="bg-val-card rounded-2xl border border-val-border p-6 w-[380px] shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold">Support Development</h2>
+                <button
+                    class="w-8 h-8 rounded-lg bg-val-bg hover:bg-val-card-hover flex items-center justify-center text-val-text-muted hover:text-val-text transition-all"
+                    id="close-donate">✕</button>
             </div>
-            <div class="modal-body" style="text-align: center;">
-                <div style="font-size: 48px; margin-bottom: 20px;">💖</div>
-                <p>If you like ValTools, consider supporting me!</p>
-                <div class="donate-buttons"
-                    style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
-                    <a href="#" class="btn-accent"
+            <div class="text-center py-4">
+                <div class="text-5xl mb-4">💜</div>
+                <p class="text-val-text-2 mb-6">Your support keeps ValTools free!</p>
+                <div class="flex gap-3">
+                    <a href="#"
+                        class="flex-1 py-3 bg-val-gold text-val-bg rounded-xl font-semibold text-center no-underline transition-all hover:shadow-lg"
                         onclick="window.electronAPI.openExternal('https://saweria.co/valchi')">Saweria</a>
-                    <a href="#" class="btn-secondary"
+                    <a href="#"
+                        class="flex-1 py-3 bg-blue-500 text-white rounded-xl font-semibold text-center no-underline transition-all hover:shadow-lg"
                         onclick="window.electronAPI.openExternal('https://ko-fi.com/valc2')">Ko-fi</a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Internet Warning Toast (non-blocking) -->
-    <div id="internet-warning-modal" class="internet-warning-toast" style="display: none;">
-        <div class="toast-content">
-            <span class="toast-icon">📡</span>
-            <span class="toast-text">Koneksi internet terputus</span>
-            <button class="toast-close"
+    <!-- Internet Warning Toast -->
+    <div id="internet-warning-modal" class="internet-warning-toast fixed bottom-12 left-1/2 -translate-x-1/2 z-[10000]"
+        style="display: none;">
+        <div class="flex items-center gap-3 bg-val-card border border-val-warning rounded-xl px-4 py-3 shadow-lg">
+            <span class="text-lg">📡</span>
+            <span class="text-val-warning text-sm font-medium">No internet connection</span>
+            <button
+                class="text-val-text-muted hover:text-val-text text-sm px-2 py-1 rounded hover:bg-white/10 transition-all"
                 onclick="document.getElementById('internet-warning-modal').style.display='none'">✕</button>
         </div>
     </div>
 
     <!-- Game Injection Settings Modal -->
-    <div id="gi-settings-modal" class="gi-modal">
-        <div class="gi-modal-content">
-            <div class="gi-modal-header">
-                <h3>⚙️ Steam Path Settings</h3>
-                <button class="gi-modal-close" id="gi-close-settings">✕</button>
+    <div id="gi-settings-modal"
+        class="gi-modal fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[1000]">
+        <div class="bg-val-card rounded-2xl border border-val-border w-[400px] max-w-[90%] shadow-2xl overflow-hidden">
+            <div class="flex justify-between items-center p-4 border-b border-val-border">
+                <h3 class="font-bold">⚙️ Steam Path Settings</h3>
+                <button
+                    class="w-8 h-8 rounded-lg bg-val-bg hover:bg-val-card-hover flex items-center justify-center text-val-text-muted hover:text-val-text transition-all"
+                    id="gi-close-settings">✕</button>
             </div>
-            <div class="gi-modal-body">
-                <div class="gi-setting-group">
-                    <label>Steam Installation Path</label>
-                    <div class="gi-path-input-row">
-                        <input type="text" id="gi-custom-steam-path" placeholder="C:\Program Files (x86)\Steam">
-                        <button class="gi-btn-browse" id="gi-browse-path-btn">📁 Browse</button>
-                    </div>
-                    <small>Kosongkan untuk auto-detect</small>
+            <div class="p-4">
+                <label class="block text-xs font-semibold mb-2">Steam Installation Path</label>
+                <div class="flex gap-2">
+                    <input type="text" id="gi-custom-steam-path" placeholder="C:\Program Files (x86)\Steam"
+                        class="flex-1 py-2.5 px-3 bg-val-bg border border-val-border rounded-lg text-sm focus:outline-none focus:border-val-accent">
+                    <button
+                        class="px-4 py-2.5 bg-val-bg border border-val-border rounded-lg text-sm text-val-text-2 hover:bg-val-card-hover hover:text-val-text transition-all"
+                        id="gi-browse-path-btn">📁</button>
                 </div>
+                <small class="block text-xs text-val-text-muted mt-2">Leave empty for auto-detect</small>
             </div>
-            <div class="gi-modal-footer">
-                <button class="gi-btn gi-btn-save" id="gi-save-settings">💾 Save Settings</button>
+            <div class="p-4 border-t border-val-border">
+                <button
+                    class="w-full py-3 bg-gradient-to-r from-val-accent to-val-accent-2 text-white rounded-xl font-semibold transition-all hover:shadow-glow"
+                    id="gi-save-settings">💾 Save Settings</button>
             </div>
         </div>
     </div>
 
-    <!-- Game Injection Toast Container -->
-    <div class="gi-toast-container" id="gi-toast-container"></div>
+    <!-- Toast Container -->
+    <div class="gi-toast-container fixed bottom-12 right-4 z-[1001] flex flex-col gap-2" id="gi-toast-container"></div>
 
-    <!-- Game Injection Loading Overlay -->
-    <div class="gi-loading-overlay" id="gi-loading-overlay" style="display: none;">
-        <div class="gi-loading-spinner"></div>
-        <div class="gi-loading-text">Processing...</div>
+    <!-- Loading Overlay -->
+    <div class="gi-loading-overlay fixed inset-0 bg-black/80 backdrop-blur-sm z-[1002] hidden flex-col items-center justify-center gap-4"
+        id="gi-loading-overlay" style="display: none;">
+        <div class="w-12 h-12 border-3 border-val-border border-t-val-accent rounded-full animate-spin"></div>
+        <div class="text-val-text-2 text-sm">Processing...</div>
     </div>
 
     <script src="renderer.js"></script>

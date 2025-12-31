@@ -792,8 +792,7 @@ function setConnectionStatus(connected) {
 }
 
 function updateStatusBar() {
-    const target = settings.steam_path?.split('\\').pop() || 'Unknown';
-    document.getElementById('status-target').textContent = `🎯 Target: ${target}`;
+    // Status bar now shows Discord link, no need to update
 }
 
 function refreshData() {
@@ -976,10 +975,12 @@ async function openSettings() {
     if (window.electronAPI) {
         const path = await window.electronAPI.selectSteamPath();
         if (path) {
+            // Update both settings to keep them synced
             settings.steam_path = path;
+            settings.customSteamPath = path;
             await window.electronAPI.saveSettings(settings);
-            updateStatusBar();
-            alert('Steam path updated!');
+            giSteamPath = path; // Update Game Injection path too
+            alert('Steam path updated: ' + path);
         }
     }
 }
@@ -1575,13 +1576,17 @@ async function giBrowseSteamPath() {
 
 async function giSaveSettings() {
     const customPath = document.getElementById('gi-custom-steam-path').value.trim();
-    const settings = await window.electronAPI.getSettings();
-    settings.customSteamPath = customPath;
-    await window.electronAPI.saveSettings(settings);
+    const currentSettings = await window.electronAPI.getSettings();
+    // Update both settings to keep them synced
+    currentSettings.customSteamPath = customPath;
+    currentSettings.steam_path = customPath;
+    await window.electronAPI.saveSettings(currentSettings);
 
     giSteamPath = customPath || await window.electronAPI.getSteamPathInject();
+    settings.steam_path = giSteamPath; // Sync global settings
+    settings.customSteamPath = giSteamPath;
     giCloseSettings();
-    giShowToast('success', 'Settings disimpan!');
+    giShowToast('success', 'Steam path disimpan untuk semua fitur!');
 }
 
 function giShowStatus(type, message) {

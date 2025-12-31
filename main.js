@@ -525,27 +525,35 @@ ipcMain.handle('run-injection', async (event, accountData, steamPath) => {
         let spawnCmd;
 
         if (app.isPackaged) {
+            // In production, use the bundled executable
             executablePath = path.join(process.resourcesPath, 'backend', executableName);
+            if (fs.existsSync(executablePath)) {
+                spawnCmd = executablePath;
+                console.log('Starting injection with executable:', {
+                    path: executablePath,
+                    username: accountData.u
+                });
+            } else {
+                reject(new Error('Automation executable not found in packaged app'));
+                return;
+            }
         } else {
-            executablePath = path.join(__dirname, 'backend', 'dist', executableName);
-        }
-
-        if (fs.existsSync(executablePath)) {
-            spawnCmd = executablePath;
-            console.log('Starting injection with executable:', {
-                path: executablePath,
-                username: accountData.u
-            });
-        } else {
-            // Fallback to python script
+            // In development, prefer Python script for easier debugging
             const pythonScript = path.join(__dirname, 'backend', 'automation.py');
             if (fs.existsSync(pythonScript)) {
-                console.log('Starting injection with Python script (fallback):', pythonScript);
+                console.log('Starting injection with Python script (dev mode):', pythonScript);
                 spawnCmd = 'python';
                 spawnArgs = [pythonScript, ...spawnArgs];
             } else {
-                reject(new Error('Automation executable/script not found'));
-                return;
+                // Fallback to exe if Python script not found
+                executablePath = path.join(__dirname, 'backend', 'dist', executableName);
+                if (fs.existsSync(executablePath)) {
+                    spawnCmd = executablePath;
+                    console.log('Starting injection with executable (fallback):', executablePath);
+                } else {
+                    reject(new Error('Automation script/executable not found'));
+                    return;
+                }
             }
         }
 
